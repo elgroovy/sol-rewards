@@ -12,6 +12,7 @@ import {
     getMintLen,
     createInitializeTransferFeeConfigInstruction,
     createInitializeMintInstruction,
+    decodeInitializeMintInstruction,
     createInitializeMetadataPointerInstruction,
     TYPE_SIZE,
     LENGTH_SIZE,
@@ -45,23 +46,21 @@ async function main() {
         additionalMetadata: [["description", TokenConfig.kDescription]],
     };
 
-    // Size of MetadataExtension 2 bytes for type, 2 bytes for length
-    const metadataExtension = TYPE_SIZE + LENGTH_SIZE;
-    // Size of metadata
-    const metadataLen = pack(metaData).length;
+    // Size of MetadataExtension 2 bytes for type, 2 bytes for length, plus the actual struct
+    const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metaData).length;
 
     try {
         console.log("Minting token...");
 
         // Connection to the cluster
         const connection = new Connection(clusterApiUrl(TokenConfig.kSolanaNetwork), "confirmed");
-        
+
         const feeRecipient = new PublicKey(TokenConfig.kFeeRecipientPubkey);
         
         const extensions = [ExtensionType.TransferFeeConfig, ExtensionType.MetadataPointer];
-        const mintLength = getMintLen(extensions) + metadataExtension + metadataLen;
+        const mintLength = getMintLen(extensions);
         
-        const mintLamports = await connection.getMinimumBalanceForRentExemption(mintLength);
+        const mintLamports = await connection.getMinimumBalanceForRentExemption(mintLength + metadataLen);
         
         const createAccountInstruction = SystemProgram.createAccount({
             fromPubkey: ownerPayerKeypair.publicKey,
