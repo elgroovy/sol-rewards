@@ -1,6 +1,21 @@
 {
-  "name": "BBB Test Token",
-  "symbol": "BBB",
-  "description": "This is just another BBB test token",
-  "image": "https://raw.githubusercontent.com/elgroovy/sol-rewards/refs/heads/main/mint/logo.jpeg?token=GHSAT0AAAAAAC6GTOKGA53IXKB7ZVV3CJMMZ6TVFRA"
+  "name": "Reward Token Test",
+  "symbol": "RTT",
+  "image": "https://ipfs.io/ipfs/bafkreihtw5mfxw2wecjczyb56xeafu5fka4jqlz7xdr5caufscx62sfo7y",
+  "description": "Reward Token Test description",
+  "website": "https://reward-token.mooney",
+  "twitter": "https://x.com/reward-token",
+  "telegram": "https://t.me/reward-token",
+  "showName": true,
+  "extensions": {
+    "website": "https://reward-token.money/",
+    "twitter": "https://x.com/reward-token",
+    "telegram": "https://t.me/reward-token"
+  },
+  "tags": [],
+  "creator": {
+    "name": "Reward Token Team",
+    "site": "https://reward-token.money"
+  },
+  "createdOn": "https://reward-token.money/"
 }

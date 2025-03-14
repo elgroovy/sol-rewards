@@ -3,10 +3,10 @@ export const TokenConfig = {
     kSolanaNetwork : "devnet",
 
     // Token metadata
-    kName: "BBB Test Token",
-    kSymbol: "BBB",
-    kDescription: "This is just another BBB test token",
-    kMetadataUri: "https://example.com/metadata.json",
+    kName: "Reward Token Test",
+    kSymbol: "RTT",
+    kDescription: "Reward Token Test description",
+    kMetadataUri: "https://ipfs.io/ipfs/bafkreicdlzqtjt7j2qhmdajsl447vcnyusz7uug22to2j2p4cwkn56vpp4",
 
     kInitialSupply: 1_000_000_000,
     kDecimals: 6,
