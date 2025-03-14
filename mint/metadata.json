@@ -2,5 +2,5 @@
   "name": "BBB Test Token",
   "symbol": "BBB",
   "description": "This is just another BBB test token",
-  "image": ""
+  "image": "https://raw.githubusercontent.com/elgroovy/sol-rewards/refs/heads/main/mint/logo.jpeg?token=GHSAT0AAAAAAC6GTOKG4L6HL5HMABAGNS4CZ6TQJNA"
 }
