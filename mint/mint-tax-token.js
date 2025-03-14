@@ -12,7 +12,6 @@ import {
     getMintLen,
     createInitializeTransferFeeConfigInstruction,
     createInitializeMintInstruction,
-    decodeInitializeMintInstruction,
     createInitializeMetadataPointerInstruction,
     TYPE_SIZE,
     LENGTH_SIZE,
@@ -69,7 +68,7 @@ async function main() {
             lamports: mintLamports,
             programId: TOKEN_2022_PROGRAM_ID,
         });
-        
+
         const initializeTransferFeeConfigInstruction = createInitializeTransferFeeConfigInstruction(
             tokenMintKeypair.publicKey,
             ownerPayerKeypair.publicKey,
@@ -83,10 +82,10 @@ async function main() {
         const initializeMetadataPointerInstruction = createInitializeMetadataPointerInstruction(
             tokenMintKeypair.publicKey,
             ownerPayerKeypair.publicKey, // authority that can update the metadata
-            tokenMintKeypair.publicKey, // account address that holds the metadata
+            tokenMintKeypair.publicKey,  // account address that holds the metadata
             TOKEN_2022_PROGRAM_ID,
         );
-        
+
         const initializeMintInstruction = createInitializeMintInstruction(
             tokenMintKeypair.publicKey,
             TokenConfig.kDecimals,

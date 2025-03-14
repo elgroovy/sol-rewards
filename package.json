@@ -3,7 +3,6 @@
     "version": "1.0.0",
     "description": "Automatic reward harversing and distribution for Token 2022 program with the Transfer Fees extension enabled",
     "type": "module",
-    "main": "mint/mint-tax-token.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "dev": "node reward-collector.js"
@@ -11,6 +10,7 @@
     "dependencies": {
         "@solana/spl-token": "^0.3.7",
         "@solana/web3.js": "^1.73.0",
-        "axios": "^1.8.3"
+        "axios": "^1.8.3",
+        "csv-parser": "^3.2.0"
     }
 }

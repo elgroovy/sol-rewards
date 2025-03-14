@@ -16,8 +16,6 @@ import {
     TOKEN_2022_PROGRAM_ID
 } from "@solana/spl-token";
 
-import bs58 from 'bs58';
-
 import { loadKeypairFromFile } from "./keypair-utils.js";
 import { swapToken } from './jupiter-swap.js';
 import { Constants } from './constants.js';
@@ -110,7 +108,11 @@ async function distributeRewards() {
             connection,
             ownerKeypair,
             mint,
-            ownerKeypair.publicKey
+            ownerKeypair.publicKey,
+            true,
+            "finalized",
+            { commitment: "finalized" }, // Confirmation options
+            TOKEN_2022_PROGRAM_ID,
         );
 
         // See if we already hit the token limit to start distributing rewards
