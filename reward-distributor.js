@@ -128,15 +128,6 @@ async function distributeRewards() {
             console.log(`Burning ${burnAmount} tokens...`);
 
             // Build and send the Burn transaction
-            const burnInstruction = createBurnInstruction(
-                TOKEN_2022_PROGRAM_ID,
-                mint,
-                tokenAccount.address,
-                ownerKeypair.publicKey,
-                [],
-                burnAmount
-            );
-
             const signature = await burnChecked(
                 connection,
                 ownerKeypair,
@@ -145,6 +136,9 @@ async function distributeRewards() {
                 ownerKeypair.publicKey,
                 burnAmount,
                 tokenAccount.value.decimals,
+                [],
+                { commitment: "finalized" }, // Confirmation options
+                TOKEN_2022_PROGRAM_ID,
             );
             console.log(`Burn completed. Signature: https://solscan.io/tx/${signature}`);
         }

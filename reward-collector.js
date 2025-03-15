@@ -58,7 +58,7 @@ async function collectFees() {
     const transferFeeAmount = getTransferFeeAmount(account);
   
     // Check if fees are available to be withdrawn
-    if (transferFeeAmount !== null && transferFeeAmount.withheldAmount > 0) {
+    if (transferFeeAmount !== null && transferFeeAmount.withheldAmount > BigInt(0)) {
       //console.log(`Found wallet with withheld fee: ${transferFeeAmount.withheldAmount}`);
       totalFees += transferFeeAmount.withheldAmount;
       accountsToWithdrawFrom.push(accountInfo.pubkey); // Add account to withdrawal list
