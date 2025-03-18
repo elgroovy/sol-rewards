@@ -1,6 +1,8 @@
 
 export const Constants = {
     kSolanaNetwork : "mainnet-beta",
+    kHeliusRPCEndpoint : "https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
+
     kTokenMintPubkey : "LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST",
     kFeeRecipientWalletKeyFile : "~/sol-rewards/keys/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES.json",
     

@@ -113,7 +113,7 @@ async function distributeRewards() {
         const mint = new PublicKey(Constants.kTokenMintPubkey); 
 
         // Connection to the cluster
-        const connection = new Connection(clusterApiUrl(Constants.kSolanaNetwork), "confirmed");
+        const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
 
         // Get the token account of the owner
         const tokenAccount = await getOrCreateAssociatedTokenAccount(
