@@ -5,6 +5,8 @@ export const Constants = {
     kFeeRecipientWalletKeyFile : "~/sol-rewards/keys/fee-recipient.json",
     kTreasuryWalletPubkey : "14tobL5wspdmokchb54eWdt72tzzY4DEJxDevHR3NTRE",
 
+    kTokenDecimals: 6,
+
     // Reward distribution settings
     kTokensToAccumulate : 10000,    // Start distributing rewards when this amount of tokens is accumulated
     kTreasuryPercent : 50,          // 50% of fees goes to treasury (the rest goes to holders and burnt)

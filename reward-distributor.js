@@ -41,7 +41,7 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
     });
 
     // Fetch the total supply from the mint account
-    const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey));
+    const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), {commitment: "confirmed"}, TOKEN_2022_PROGRAM_ID);
     const totalSupply = mintAccount.supply;
 
     const instructions = [];
@@ -54,11 +54,11 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
             TOKEN_2022_PROGRAM_ID
         );
 
-        const holderShare = (account.amount / totalSupply) * totalLamportsToSend;
+        const holderShare = (BigInt(account.amount) * BigInt(totalLamportsToSend)) / BigInt(totalSupply);
 
         // If SOL amount is too small, skip.
         // We keep accumulating until we have enough to distribute.
-        if (holderShare < Constants.kSolMinLimit * LAMPORTS_PER_SOL) {
+        if (holderShare < BigInt(Constants.kSolMinLimit * LAMPORTS_PER_SOL)) {
             continue;
         }
 
@@ -66,22 +66,24 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
             SystemProgram.transfer({
                 fromPubkey: ownerKeypair.publicKey,
                 toPubkey: account.owner,
-                lamports: holderShare,
+                lamports: holderShare
             })
         );
     }
 
     // Distribute SOL in batches to make sure we don't hit the Solana transaction size limit of 1232 bytes 
     for (let i = 0; i < instructions.length; i += Constants.kBatchSize) {
-        const transaction = new Transaction().add(instructions.slice(i, i + Constants.kBatchSize));
+        const transaction = new Transaction().add(...instructions.slice(i, i + Constants.kBatchSize));
 
         // TODO: should we use sendAndConfirmTransaction instead? Not sure if it's a good idea to wait for each batch to confirm.
-        //const signature = await sendAndConfirmTransaction(connection, transaction, [ownerKeypair]);
-        const signature = await connection.sendTransaction(transaction, [ownerKeypair]);
+        const signature = await sendAndConfirmTransaction(connection, transaction, [ownerKeypair]);
+        //const signature = await connection.sendTransaction(transaction, [ownerKeypair]);
         
         const batchIndex = i / Constants.kBatchSize + 1; 
         console.log(`Batch ${batchIndex} sent. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
     }
+
+    console.log(`Submitted ${instructions.length} SOL transfer TXs.`);
 }
 
 /**
@@ -101,7 +103,7 @@ async function distributeRewards() {
         const mint = new PublicKey(Constants.kTokenMintPubkey); 
 
         // Connection to the cluster
-        const connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
+        const connection = new Connection(clusterApiUrl(Constants.kSolanaNetwork), "confirmed");
 
         // Get the token account of the owner
         const tokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -117,15 +119,18 @@ async function distributeRewards() {
 
         // See if we already hit the token limit to start distributing rewards
         const tokenAmount = await connection.getTokenAccountBalance(tokenAccount.address);
-        if (tokenAmount.value.amount < Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals) {
+        const tokenBalance = tokenAmount.value.amount;
+        if (tokenBalance < BigInt(Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals)) {
             console.log("Not enough tokens to distribute rewards");
             return;
         }
 
         // Calculate the amount of tokens to burn
+        let burnAmount = 0;
         if (Constants.kBurnPercent !== 0) {
-            const burnAmount = Math.floor(tokenAmount.value.amount * (Constants.kBurnPercent / 100));
-            console.log(`Burning ${burnAmount} tokens...`);
+            burnAmount = Math.floor(tokenBalance * (Constants.kBurnPercent / 100));
+            const tokensToBurn = burnAmount / Math.pow(10, tokenAmount.value.decimals);
+            console.log(`Burning ${tokensToBurn} tokens...`);
 
             // Build and send the Burn transaction
             const signature = await burnChecked(
@@ -135,19 +140,20 @@ async function distributeRewards() {
                 mint,
                 ownerKeypair.publicKey,
                 burnAmount,
-                tokenAccount.value.decimals,
-                [],
-                { commitment: "finalized" }, // Confirmation options
+                tokenAmount.value.decimals,
+                undefined,
+                undefined,
                 TOKEN_2022_PROGRAM_ID,
             );
-            console.log(`Burn completed. Signature: https://solscan.io/tx/${signature}`);
+            console.log(`Burn completed. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
         }
 
         // Swap remaining tokens for SOL
-        const remainingTokenAmount = tokenAmount.value.amount - burnAmount;
-        console.log(`Swapping ${remainingTokenAmount} tokens for SOL...`);
-        const swapResult = await swapToken(connection, ownerKeypair, mint, remainingTokenAmount, 'So11111111111111111111111111111111111111112', Constants.kSwapSlippage);
-        
+        const remainingTokenAmount = tokenBalance - burnAmount;
+        const tokensToSwap = remainingTokenAmount / Math.pow(10, tokenAmount.value.decimals)
+        console.log(`Swapping ${tokensToSwap} tokens for SOL...`);
+        const swapResult = await swapToken(connection, ownerKeypair, mint, remainingTokenAmount, 'So11111111111111111111111111111111111111112', Constants.kSwapSlippage);  
+
         // Finally, divide the SOL among the holders and treasury wallet
         if (swapResult.success) {
 
@@ -172,7 +178,8 @@ async function distributeRewards() {
                   lamports: treasuryLamports,
                 }),
             );
-            await sendAndConfirmTransaction(connection, transferTransaction, [ownerKeypair]);
+            const signature = await sendAndConfirmTransaction(connection, transferTransaction, [ownerKeypair]);
+            console.log(`Sent to treasury. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
 
             accountBalance -= treasuryLamports;
 
@@ -193,7 +200,7 @@ try {
     //console.log(`Owner public key: ${ownerKeypair.publicKey.toBase58()}`);
 } catch (error) {
     console.error("Failed to load the owner keypair:", error);
-    return;
+    throw error;
 }
 
 // Run it once first
@@ -201,8 +208,8 @@ await distributeRewards().catch(console.error);
 
 // Run it every X minutes
 setInterval(() => {
-  //distributeRewards().catch(console.error);
-}, 60000); // 300000 milliseconds = 5 minutes
+  distributeRewards().catch(console.error);
+}, 300000); // 300000 milliseconds = 5 minutes
 
 // Keep the application running
 process.stdin.resume();

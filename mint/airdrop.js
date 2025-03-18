@@ -11,6 +11,14 @@ import fs from 'fs';
 import csv from 'csv-parser'
 
 
+/**
+ * This script performs an airdrop of tokens to a list of wallet addresses specified in a CSV file.
+ * It reads the CSV file to get the wallet addresses and their respective contributions,
+ * calculates the share of tokens each address should receive based on their contribution,
+ * and then mints and sends the appropriate amount of tokens to each address.
+ * The script uses the Solana web3.js library and the SPL Token library to interact with the Solana blockchain.
+ */
+
 const TOTAL_TOKENS_TO_DISTRIBUTE = Math.floor(1_000_000_000 * 0.7); // 70%
 
 const csvFilePath = '/home/elisa/sol-rewards/mint/airdrop.csv';

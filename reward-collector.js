@@ -25,6 +25,8 @@ let ownerKeypair = null;
  * and withdraws them to a specified destination account.
  */
 async function collectFees() {
+  console.log("---------------------------------");
+
   const mint = new PublicKey(Constants.kTokenMintPubkey); 
   
   // Connection to the cluster
@@ -64,6 +66,12 @@ async function collectFees() {
       accountsToWithdrawFrom.push(accountInfo.pubkey); // Add account to withdrawal list
     }
   }
+
+  const totalFeesInTokens = Number(totalFees) / Math.pow(10, Constants.kTokenDecimals);
+  console.log(`Found ${accountsToWithdrawFrom.length} account(s) we can collect the fees from. ${totalFeesInTokens} tokens in total:`);
+  for (const account of accountsToWithdrawFrom) {
+    console.log(account.toBase58());
+  }
   
   if (accountsToWithdrawFrom.length > 0) {
   
@@ -102,7 +110,7 @@ async function collectFees() {
       // See withdrawWithheldTokensFromMint and harvestWithheldTokensToMint functions.
   
       console.log(
-          `Got a total of ${totalFees} withheld tokens:`,
+          `Successfully retrieved withheld tokens:`,
           `https://solscan.io/tx/${transactionSignature}?cluster=${Constants.kSolanaNetwork}`,
       );
     } catch (error) {
@@ -125,10 +133,7 @@ try {
   //console.log(`Owner public key: ${ownerKeypair.publicKey.toBase58()}`);
 } catch (error) {
   console.error("Failed to load the owner keypair:", error);
-  return;
-}
-for (const account of accountsToWithdrawFrom) {
-  console.log(account.toBase58());
+  throw error;
 }
 
 // Run it once first
@@ -137,7 +142,7 @@ await collectFees().catch(console.error);
 // Run it every X minutes
 setInterval(() => {
   collectFees().catch(console.error);
-}, 10000); // 300000 milliseconds = 5 minutes
+}, 300000); // 300000 milliseconds = 5 minutes
 
 // Keep the application running
 process.stdin.resume();
