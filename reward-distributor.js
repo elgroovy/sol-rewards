@@ -43,7 +43,7 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
     // Exclude Fee, Treasury, and Burn wallets from the list of holders
     const excludedWallets = new Set([
         /*Constants.kTreasuryWalletPubkey,*/
-        ownerKeypair.pubkey.toBase58(),
+        ownerKeypair.publicKey.toBase58(),
         Constants.kBurnWalletPubkey,
     ]);
     
@@ -93,7 +93,7 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
         console.log(`Batch ${batchIndex} sent. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
     }
 
-    console.log(`Submitted ${instructions.length} SOL transfer TXs.`);
+    console.log(`Submitted ${instructions.length} TXs (SOL transfer).`);
 }
 
 /**
