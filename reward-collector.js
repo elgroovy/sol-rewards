@@ -93,26 +93,31 @@ async function collectFees() {
         TOKEN_2022_PROGRAM_ID,
       );
   
-      // Withdraw withheld tokens from Token Accounts
-      const transactionSignature = await withdrawWithheldTokensFromAccounts(
-        connection,
-        payer,
-        mint,
-        destinationTokenAccount.address, // destination account for fee withdrawal
-        withdrawWithheldAuthority, // authority for fee withdrawal
-        [], // additional signers (empty array)
-        accountsToWithdrawFrom,
-        undefined, // confirmation options
-        TOKEN_2022_PROGRAM_ID,
-      );
+      // Withdraw withheld tokens from Token Accounts.
+      // Do this in batches to make sure we don't hit the Solana transaction size limit of 1232 bytes 
+      for (let i = 0; i < accountsToWithdrawFrom.length; i += Constants.kBatchSize) {
+        const currentAccountsBatch = accountsToWithdrawFrom.slice(i, i + Constants.kBatchSize);
 
-      // TODO: attempt to withdraw withheld tokens to the Mint account as well.
-      // See withdrawWithheldTokensFromMint and harvestWithheldTokensToMint functions.
-  
-      console.log(
-          `Successfully retrieved withheld tokens:`,
-          `https://solscan.io/tx/${transactionSignature}?cluster=${Constants.kSolanaNetwork}`,
-      );
+        const transactionSignature = await withdrawWithheldTokensFromAccounts(
+          connection,
+          payer,
+          mint,
+          destinationTokenAccount.address, // destination account for fee withdrawal
+          withdrawWithheldAuthority, // authority for fee withdrawal
+          [], // additional signers (empty array)
+          currentAccountsBatch,
+          undefined, // confirmation options
+          TOKEN_2022_PROGRAM_ID,
+        );
+
+        // TODO: attempt to withdraw withheld tokens to the Mint account as well.
+        // See withdrawWithheldTokensFromMint and harvestWithheldTokensToMint functions.
+    
+        console.log(
+            `Successfully retrieved withheld tokens:`,
+            `https://solscan.io/tx/${transactionSignature}?cluster=${Constants.kSolanaNetwork}`,
+        );
+      }
     } catch (error) {
       if (error instanceof SendTransactionError) {
         console.error("Transaction failed:", error.message);
