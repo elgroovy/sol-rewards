@@ -19,7 +19,7 @@ import csv from 'csv-parser'
  * The script uses the Solana web3.js library and the SPL Token library to interact with the Solana blockchain.
  */
 
-const TOTAL_SOL_RAISED = 2.757173345; // DO NOT FORGET TO EDIT THIS!
+const TOTAL_SOL_RAISED = 2.857173345; // DO NOT FORGET TO EDIT THIS!
 const TOTAL_TOKENS_TO_DISTRIBUTE = Math.floor(1_000_000_000 * 0.5); // 50%
 
 const csvFilePath = '/home/elisa/sol-rewards/mint/airdrop.csv';

@@ -1,9 +1,11 @@
 
 export const Constants = {
-    kSolanaNetwork : "mainnet-beta", //"devnet",
+    kSolanaNetwork : "devnet",
     kTokenMintPubkey : "147Eqgkkmesmzb3JwfrigVDk6hhJP7N2eENrzqreTEST",
     kFeeRecipientWalletKeyFile : "~/sol-rewards/keys/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES.json",
+    
     kTreasuryWalletPubkey : "LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA",
+    kBurnWalletPubkey : "M7HR93zu4ToKFeAzpta96S1mpC2KJu9o2fXZhjtBURN",
 
     kTokenDecimals: 6,
 

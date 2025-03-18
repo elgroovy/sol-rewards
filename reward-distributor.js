@@ -39,7 +39,14 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
             },
         ],
     });
-
+    
+    // Exclude Fee, Treasury, and Burn wallets from the list of holders
+    const excludedWallets = new Set([
+        /*Constants.kTreasuryWalletPubkey,*/
+        ownerKeypair.pubkey.toBase58(),
+        Constants.kBurnWalletPubkey,
+    ]);
+    
     // Fetch the total supply from the mint account
     const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), {commitment: "confirmed"}, TOKEN_2022_PROGRAM_ID);
     const totalSupply = mintAccount.supply;
@@ -53,6 +60,9 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
             accountInfo.account,
             TOKEN_2022_PROGRAM_ID
         );
+        
+        if (excludedWallets.has(account.owner.toBase58()))
+            continue;
 
         const holderShare = (BigInt(account.amount) * BigInt(totalLamportsToSend)) / BigInt(totalSupply);
 
@@ -152,10 +162,10 @@ async function distributeRewards() {
         const remainingTokenAmount = tokenBalance - burnAmount;
         const tokensToSwap = remainingTokenAmount / Math.pow(10, tokenAmount.value.decimals)
         console.log(`Swapping ${tokensToSwap} tokens for SOL...`);
-        const swapResult = await swapToken(connection, ownerKeypair, mint, remainingTokenAmount, 'So11111111111111111111111111111111111111112', Constants.kSwapSlippage);  
+        /*const swapResult = await swapToken(connection, ownerKeypair, mint, remainingTokenAmount, 'So11111111111111111111111111111111111111112', Constants.kSwapSlippage);  
 
         // Finally, divide the SOL among the holders and treasury wallet
-        if (swapResult.success) {
+        if (swapResult.success)*/ {
 
             // Get current SOL balance
             let accountBalance = await connection.getBalance(ownerKeypair.publicKey);
