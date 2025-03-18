@@ -6,7 +6,7 @@ export const TokenConfig = {
     kName: "Test Rewards Token",
     kSymbol: "TRT",
     kDescription: "A token that takes a little off the top, because who doesn't love a good tax?",
-    kMetadataUri: "https://ipfs.io/ipfs/bafkreigcy77lfv27ozg2bp4yuo662fxkgr3p5vnwxuopb5542fgee4fwf4",
+    kMetadataUri: "https://ipfs.io/ipfs/bafkreihai3iw5npq2zzkjplzu43yvmlphnzivxvptdw4wxr77nbby4tvkm",
 
     kInitialSupply: 1_000_000_000,
     kDecimals: 6,
