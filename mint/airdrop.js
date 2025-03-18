@@ -19,7 +19,8 @@ import csv from 'csv-parser'
  * The script uses the Solana web3.js library and the SPL Token library to interact with the Solana blockchain.
  */
 
-const TOTAL_TOKENS_TO_DISTRIBUTE = Math.floor(1_000_000_000 * 0.7); // 70%
+const TOTAL_SOL_RAISED = 2.757173345; // DO NOT FORGET TO EDIT THIS!
+const TOTAL_TOKENS_TO_DISTRIBUTE = Math.floor(1_000_000_000 * 0.5); // 50%
 
 const csvFilePath = '/home/elisa/sol-rewards/mint/airdrop.csv';
 let totalContribution = 0;
@@ -47,12 +48,17 @@ try {
             totalContribution += contribution;
         })
         .on('end', async () => {
+
+            totalContribution = TOTAL_SOL_RAISED;
+
             console.log('CSV file successfully processed. Starting airdrop...');
             for (const { walletAddress, contribution } of contributions) {
                 const share = contribution / totalContribution;
                 const amountToMint = BigInt(Math.floor(share * TOTAL_TOKENS_TO_DISTRIBUTE)) * BigInt(10 ** TokenConfig.kDecimals);
     
                 const recipientPublicKey = new PublicKey(walletAddress);
+
+                console.log(`Sending to ${walletAddress}...`);
 
                 // Get the token account of the recipientPublicKey. If it does not exist, create it
                 const destinationTokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -65,6 +71,8 @@ try {
                     { commitment: "finalized" }, // confirmation options
                     TOKEN_2022_PROGRAM_ID,
                 );
+
+                //await new Promise(resolve => setTimeout(resolve, 5000)); // Add a 5-second delay between each iteration
     
                 let txhash = await mintToChecked(
                     connection,
@@ -78,7 +86,10 @@ try {
                     { commitment: "finalized" }, // confirmation options
                     TOKEN_2022_PROGRAM_ID
                 );
-                console.log(`Sent to ${walletAddress}, txhash: ${txhash}`);
+                const tokensAmount = amountToMint / BigInt(Math.pow(10, TokenConfig.kDecimals));
+                console.log(`Sent ${tokensAmount} tokens, txhash: ${txhash}`);
+
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Add a 5-second delay between each iteration
             }
             console.log("Airdop finished.");
         });
