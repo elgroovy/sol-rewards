@@ -162,10 +162,10 @@ async function distributeRewards() {
         const remainingTokenAmount = tokenBalance - burnAmount;
         const tokensToSwap = remainingTokenAmount / Math.pow(10, tokenAmount.value.decimals)
         console.log(`Swapping ${tokensToSwap} tokens for SOL...`);
-        /*const swapResult = await swapToken(connection, ownerKeypair, mint, remainingTokenAmount, 'So11111111111111111111111111111111111111112', Constants.kSwapSlippage);  
+        const swapResult = await swapToken(connection, ownerKeypair, mint, remainingTokenAmount, 'So11111111111111111111111111111111111111112', Constants.kSwapSlippage);  
 
         // Finally, divide the SOL among the holders and treasury wallet
-        if (swapResult.success)*/ {
+        if (swapResult.success) {
 
             // Get current SOL balance
             let accountBalance = await connection.getBalance(ownerKeypair.publicKey);
