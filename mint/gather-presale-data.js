@@ -1,12 +1,13 @@
 
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { Console } from 'console';
 import { createObjectCsvWriter as csvWriter } from 'csv-writer';
 import fs from 'fs';
 
 
-const MINIMUM_SOL_AMOUNT = 0.0001 * LAMPORTS_PER_SOL; // a minimum SOL amount to filter spammy transactions
+const MINIMUM_SOL_AMOUNT = 0.0001; // a minimum SOL amount to filter spammy transactions
 
-const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16');
+const connection = new Connection("https://api.mainnet-beta.solana.com");//('https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16');
 const presaleAddress = new PublicKey('zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D');
 
 async function gatherPresaleData() {
@@ -15,8 +16,12 @@ async function gatherPresaleData() {
         console.log(`Found ${signatures.length} transactions`);
         const presaleData = [];
 
+        let counter = signatures.length;
         for (const sig of signatures) {
-            const tx = await connection.getTransaction(sig.signature, { commitment: undefined, maxSupportedTransactionVersion: undefined });
+            
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Add a 5-second delay between each iteration
+            const tx = await connection.getTransaction(sig.signature, { commitment: undefined, maxSupportedTransactionVersion: 0 });
+            
             const accountKeys = tx.transaction.message.getAccountKeys();
             const accountIndex = accountKeys.staticAccountKeys.findIndex((pubkey) => pubkey.equals(presaleAddress));
 
@@ -25,10 +30,14 @@ async function gatherPresaleData() {
             if (postBalance > preBalance) {
                 const lamportsSentIn = postBalance - preBalance;
 
+                const walletAddress = accountKeys.staticAccountKeys[0].toString();
+                const amount = lamportsSentIn / LAMPORTS_PER_SOL;
+
                 presaleData.push({
-                    walletAddress: accountKeys.staticAccountKeys[0].toString(),
-                    solAmount: lamportsSentIn / LAMPORTS_PER_SOL
+                    walletAddress: walletAddress,
+                    contribution: amount
                 });
+                console.log(`Wallet ${walletAddress}, sent ${amount} SOL. Remaining ${--counter}`);
             }
         }
 
@@ -36,7 +45,7 @@ async function gatherPresaleData() {
         const mergedPresaleData = presaleData.reduce((acc, current) => {
             const existing = acc.find(item => item.walletAddress === current.walletAddress);
             if (existing) {
-                existing.solAmount += current.solAmount;
+                existing.contribution += current.contribution;
             } else {
                 acc.push(current);
             }
@@ -44,7 +53,7 @@ async function gatherPresaleData() {
         }, []);
 
         // Filter out spammy transactions
-        const filteredPresaleData = mergedPresaleData.filter(item => item.solAmount >= MINIMUM_SOL_AMOUNT);
+        const filteredPresaleData = mergedPresaleData.filter(item => item.contribution >= MINIMUM_SOL_AMOUNT);
 
         console.log(filteredPresaleData);
 

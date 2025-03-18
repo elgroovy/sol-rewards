@@ -1,21 +1,21 @@
 {
-  "name": "Reward Token Test",
-  "symbol": "RTT",
-  "image": "https://ipfs.io/ipfs/bafkreihtw5mfxw2wecjczyb56xeafu5fka4jqlz7xdr5caufscx62sfo7y",
-  "description": "Reward Token Test description",
-  "website": "https://reward-token.mooney",
-  "twitter": "https://x.com/reward-token",
-  "telegram": "https://t.me/reward-token",
+  "name": "Test Rewards Token",
+  "symbol": "TRT",
+  "image": "http://ipfs.io/ipfs/bafkreidq6jxqgww4y5vmyo3ieiy3hepwsy5hrru6u6alrrq4kjmhz2eqjq",
+  "description": "A token that takes a little off the top, because who doesn't love a good tax?",
+  "website": "https://testrewardstoken.mooney",
+  "twitter": "https://x.com/testrewardstoken",
+  "telegram": "https://t.me/testrewardstoken",
   "showName": true,
   "extensions": {
-    "website": "https://reward-token.money/",
-    "twitter": "https://x.com/reward-token",
-    "telegram": "https://t.me/reward-token"
+    "website": "https://testrewardstoken.mooney",
+    "twitter": "https://x.com/testrewardstoken",
+    "telegram": "https://t.me/testrewardstoken"
   },
   "tags": [],
   "creator": {
-    "name": "Reward Token Team",
-    "site": "https://reward-token.money"
+    "name": "Test Rewards Toke Team",
+    "site": "https://testrewardstoken.mooney"
   },
-  "createdOn": "https://reward-token.money/"
+  "createdOn": "https://testrewardstoken.mooney"
 }

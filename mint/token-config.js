@@ -1,12 +1,12 @@
 
 export const TokenConfig = {
-    kSolanaNetwork : "devnet",
+    kSolanaNetwork : "mainnet-beta", //"devnet",
 
     // Token metadata
-    kName: "Reward Token Test",
-    kSymbol: "RTT",
-    kDescription: "Reward Token Test description",
-    kMetadataUri: "https://ipfs.io/ipfs/bafkreicdlzqtjt7j2qhmdajsl447vcnyusz7uug22to2j2p4cwkn56vpp4",
+    kName: "Test Rewards Token",
+    kSymbol: "TRT",
+    kDescription: "A token that takes a little off the top, because who doesn't love a good tax?",
+    kMetadataUri: "https://ipfs.io/ipfs/bafkreibqof4c4ld5n2rw7bq2vbvgkmcpfykyu5gyewsusbnbbgyjdryg4a",
 
     kInitialSupply: 1_000_000_000,
     kDecimals: 6,
@@ -16,7 +16,7 @@ export const TokenConfig = {
 
     kEnableFreezeAuthority: false,
     
-    kTokenMintKeypair : "~/sol-rewards/keys/mint-key.json",
+    kTokenMintKeypair : "~/sol-rewards/keys/147Eqgkkmesmzb3JwfrigVDk6hhJP7N2eENrzqreTEST.json",
     kOwnerWalletKeyFile: "~/sol-rewards/keys/zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D.json",
-    kFeeRecipientPubkey : "4mVP8EgT1XtPmcxsiyxusg7oYyfC8DtN8JByByxzKKyo"
+    kFeeRecipientPubkey : "nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES"
 };
