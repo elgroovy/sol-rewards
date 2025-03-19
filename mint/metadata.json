@@ -3,19 +3,18 @@
   "symbol": "TRT",
   "image": "https://ipfs.io/ipfs/bafkreigcy77lfv27ozg2bp4yuo662fxkgr3p5vnwxuopb5542fgee4fwf4",
   "description": "A token that takes a little off the top, because who doesn't love a good tax?",
-  "website": "https://testrewardstoken.mooney",
-  "twitter": "https://x.com/testrewardstoken",
+  "website": "https://testrewardstoken.com",
+  "twitter": "https://x.com/testrewardtoken",
   "telegram": "https://t.me/testrewardstoken",
   "showName": true,
   "extensions": {
-    "website": "https://testrewardstoken.mooney",
-    "twitter": "https://x.com/testrewardstoken",
+    "website": "https://testrewardstoken.com",
+    "twitter": "https://x.com/testrewardtoken",
     "telegram": "https://t.me/testrewardstoken"
   },
   "tags": [],
   "creator": {
-    "name": "Test Rewards Toke Team",
-    "site": "https://testrewardstoken.mooney"
-  },
-  "createdOn": "https://testrewardstoken.mooney"
+    "name": "Test Rewards Token Team",
+    "site": "https://testrewardstoken.com"
+  }
 }
