@@ -5,12 +5,12 @@
   "description": "It started as a test, but it ended up being the best reward token on Solana",
   "website": "https://testrewardstoken.com",
   "twitter": "https://x.com/testrewardtoken",
-  "telegram": "https://t.me/testrewardstoken",
+  "telegram": "https://t.me/TRT_token",
   "showName": true,
   "extensions": {
     "website": "https://testrewardstoken.com",
     "twitter": "https://x.com/testrewardtoken",
-    "telegram": "https://t.me/testrewardstoken"
+    "telegram": "https://t.me/TRT_token"
   },
   "tags": [],
   "creator": {
