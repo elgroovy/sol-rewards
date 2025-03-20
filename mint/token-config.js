@@ -5,7 +5,7 @@ export const TokenConfig = {
     // Token metadata
     kName: "Test Rewards Token",
     kSymbol: "TRT",
-    kDescription: "A token that takes a little off the top, because who doesn't love a good tax?",
+    kDescription: "It started as a test, but it ended up being the best reward token on Solana",
     kMetadataUri: "https://ipfs.io/ipfs/bafkreigclalfn7qjhlfdzl2bph7ndydx4hre44dwjxxgaqwkdzo4lreeqm",
 
     kInitialSupply: 1_000_000_000,
