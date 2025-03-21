@@ -46,6 +46,7 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
         /*Constants.kTreasuryWalletPubkey,*/
         ownerKeypair.publicKey.toBase58(),
         Constants.kBurnWalletPubkey,
+        Constants.kRaydiumVaultAuthority2
     ]);
     
     // Fetch the total supply from the mint account

@@ -5,6 +5,8 @@ export const Constants = {
 
     kNotificationServerUrl: "http://ec2-3-121-42-215.eu-central-1.compute.amazonaws.com:3000/api/rewardnotis",
 
+    kRaydiumVaultAuthority2: "GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL",
+
     kTokenMintPubkey : "LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST",
     kFeeRecipientWalletKeyFile : "~/sol-rewards/keys/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES.json",
     
