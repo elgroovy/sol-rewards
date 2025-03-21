@@ -103,10 +103,16 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
         
         const batchIndex = i / Constants.kBatchSize + 1;
         console.log(`Batch ${batchIndex} sent. Signature: ${transactionUrl}`);
+
+        console.log("Sending notification to Telegram bot...");
+        await notifyTelegramBot("rewards", walletsData.slice(i, i + Constants.kBatchSize), transactionUrl);
     }
 
     console.log(`Submitted ${instructions.length} TXs (SOL transfer).`);
+}
 
+async function notifyTelegramBot(messageType, walletsData, transactionUrl)
+{
     // Send notification to the API
     const notificationPayload = {
         messageType: "rewards",
