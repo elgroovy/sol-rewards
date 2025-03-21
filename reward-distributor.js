@@ -19,6 +19,7 @@ import {
 import { loadKeypairFromFile } from "./keypair-utils.js";
 import { swapToken } from './jupiter-swap.js';
 import { Constants } from './constants.js';
+import fetch from 'node-fetch';
 
 
 let ownerKeypair = null;
@@ -52,6 +53,7 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
     const totalSupply = mintAccount.supply;
 
     const instructions = [];
+    const walletsData = [];
 
     // Prepare SOL transfer instructions for each holder
     for (const accountInfo of allAccounts) {
@@ -79,7 +81,14 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
                 lamports: holderShare
             })
         );
+
+        walletsData.push({
+            walletAddress: account.owner.toBase58(),
+            solEarned: Number(holderShare) / LAMPORTS_PER_SOL
+        });
     }
+
+    let transactionUrl = "";
 
     // Distribute SOL in batches to make sure we don't hit the Solana transaction size limit of 1232 bytes 
     for (let i = 0; i < instructions.length; i += Constants.kBatchSize) {
@@ -88,12 +97,40 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
         // TODO: should we use sendAndConfirmTransaction instead? Not sure if it's a good idea to wait for each batch to confirm.
         const signature = await sendAndConfirmTransaction(connection, transaction, [ownerKeypair]);
         //const signature = await connection.sendTransaction(transaction, [ownerKeypair]);
+
+        // Save the transaction URL for the last batch
+        transactionUrl = `https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`;
         
-        const batchIndex = i / Constants.kBatchSize + 1; 
-        console.log(`Batch ${batchIndex} sent. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
+        const batchIndex = i / Constants.kBatchSize + 1;
+        console.log(`Batch ${batchIndex} sent. Signature: ${transactionUrl}`);
     }
 
     console.log(`Submitted ${instructions.length} TXs (SOL transfer).`);
+
+    // Send notification to the API
+    const notificationPayload = {
+        messageType: "rewards",
+        wallets: walletsData,
+        transactionUrl: transactionUrl
+    };
+
+    try {
+        const response = await fetch("http://localhost:3000/api/rewardnotis", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(notificationPayload)
+        });
+
+        if (!response.ok) {
+            console.error(`Failed to send notification. Status: ${response.status}, Message: ${await response.text()}`);
+        } else {
+            console.log("Notification sent successfully.");
+        }
+    } catch (error) {
+        console.error("Error sending notification:", error);
+    }
 }
 
 /**
