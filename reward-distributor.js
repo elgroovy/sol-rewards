@@ -115,7 +115,7 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
     };
 
     try {
-        const response = await fetch("http://localhost:3000/api/rewardnotis", {
+        const response = await fetch(Constants.kNotificationServerUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
