@@ -18,7 +18,7 @@ export const Constants = {
     // Reward distribution settings
     kTokensToAccumulate : 10000,    // Start distributing rewards when this amount of tokens is accumulated
     kTreasuryPercent : 22.2,        // This results in 2% for treasury and the rest (8%) for holders and burned
-    kBurnPercent : 10,              // 10% of tokens (fees) is burnt initially
+    kBurnPercent : 0/*10*/,         // 10% of tokens (fees) is burnt initially
     kSolToReserve: 0.1,             // 0.1 SOL to reserve for fees
     kSolMinLimit : 0.001,           // 0.001 SOL is the minimum we can send to a holder, to save on TX fees
     kBatchSize : 10,                // Number of holders to send rewards to in one batch
