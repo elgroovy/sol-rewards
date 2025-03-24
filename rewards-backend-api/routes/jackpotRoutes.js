@@ -1,0 +1,9 @@
+const express = require('express');
+const router = express.Router();
+const jackpotController = require('../controllers/jackpotController');
+
+router.post('/notifications', jackpotController.notify);
+router.put('/holders', jackpotController.updateHolders);
+router.get('/test', jackpotController.test);
+
+module.exports = router;

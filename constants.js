@@ -3,7 +3,7 @@ export const Constants = {
     kSolanaNetwork : "mainnet-beta",
     kHeliusRPCEndpoint : "https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
 
-    kNotificationServerUrl: "http://ec2-3-121-42-215.eu-central-1.compute.amazonaws.com:3000/api/rewardnotis",
+    kBackendUrl: "http://localhost:3000", // "http://ec2-3-121-42-215.eu-central-1.compute.amazonaws.com:3000",
 
     kRaydiumVaultAuthority2: "GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL",
 

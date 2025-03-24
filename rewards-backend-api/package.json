@@ -1,14 +1,15 @@
 {
-  "name": "test-rewards-bot",
+  "name": "rewards-backend-api",
   "version": "1.0.0",
-  "description": "Rewards Notification Bot for Test Rewards Token",
-  "main": "bot.js",
+  "description": "Backend API for the rewards infrastructure",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node bot.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.21.2",
+    "mysql2": "^3.14.0",
     "node-telegram-bot-api": "^0.66.0"
   },
   "author": "elgroovy",

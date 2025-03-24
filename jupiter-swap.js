@@ -26,7 +26,7 @@ export async function swapToken(connection, keypair, inputMint, inputAmmount, ou
             slippageBps: slippageBps
         }
         });
-        console.log({ quoteResponse: quoteResponse.data });
+        //console.log({ quoteResponse: quoteResponse.data });
 
         // Get serialized transactions for the swap
         const swapResponse = await axios.post('https://quote-api.jup.ag/v6/swap', {
@@ -45,7 +45,7 @@ export async function swapToken(connection, keypair, inputMint, inputAmmount, ou
         // Deserialize the transaction
         const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
         var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-        console.log(transaction);
+        //console.log(transaction);
 
         // Replace the blockhash
         const bhInfo = (await connection.getLatestBlockhashAndContext('finalized'));
