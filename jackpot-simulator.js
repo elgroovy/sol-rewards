@@ -99,7 +99,6 @@ async function sendEarnedSolToWallets(walletsToSendTo)
 async function notifyTelegramBot(notificationPayloud)
 {
     try {
-        const url = Constants.kBackendUrl + "/api/jackpots/notifications";
         const response = await fetch(Constants.kBackendUrl + "/api/jackpots/notifications", {
             method: "POST",
             headers: {
