@@ -18,7 +18,7 @@ import axios from 'axios';
  */
 export async function swapToken(connection, keypair, inputMint, inputAmmount, outputMint, slippageBps) {
     try {
-        const quoteResponse = await axios.get('https://quote-api.jup.ag/v6/quote', {
+        const quoteResponse = await axios.get('https://api.jup.ag/swap/v1/quote', {
         params: {
             inputMint: inputMint,
             outputMint: outputMint,
@@ -29,7 +29,7 @@ export async function swapToken(connection, keypair, inputMint, inputAmmount, ou
         //console.log({ quoteResponse: quoteResponse.data });
 
         // Get serialized transactions for the swap
-        const swapResponse = await axios.post('https://quote-api.jup.ag/v6/swap', {
+        const swapResponse = await axios.post('https://api.jup.ag/swap/v1/swap', {
             quoteResponse: quoteResponse.data,
             userPublicKey: keypair.publicKey.toString(),
             wrapAndUnwrapSol: true,
