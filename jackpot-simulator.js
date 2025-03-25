@@ -130,7 +130,7 @@ async function sendSimpleMessage(message, delay)
     await notifyTelegramBot({
         messageType: "simple",
         messageText: message,
-        mediaUrl: 'http://ipfs.io/ipfs/bafkreigzg3tlqipquyzwvjhwmjgaqt7ncewdw2hqjbjabslazvgmf37ta4',
+        mediaUrl: 'http://ipfs.io/ipfs/bafybeiafg5xpibm4d2fhrtiucnoafzxwsefdftzvh62xttgks2nbwifg5e',
         isAnimated: false
     });
 
@@ -368,13 +368,10 @@ async function handleJackpots() {
             }
         } else {
             console.log("Insufficient balance to draw the jackpot.");
-
-            // Wait for predefined time period before rechecking
-            setTimeout(handleJackpots, Constants.kJackpotCheckInterval * 60 * 1000);
         }
     } catch (error) {
         console.error("Error handling jackpots:", error);
-        
+    } finally {
         // Retry after predefined time period in case of an error
         setTimeout(handleJackpots, Constants.kJackpotCheckInterval * 60 * 1000);
     }
