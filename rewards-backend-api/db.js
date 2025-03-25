@@ -1,8 +1,8 @@
 const mysql = require('mysql2');
 
 const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
+    host: 'solrewards.cricseaskpns.eu-central-1.rds.amazonaws.com',
+    user: 'admin',
     password: 'SolRewards123$',
     database: 'solrewards'
 });
