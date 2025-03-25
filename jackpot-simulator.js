@@ -16,8 +16,7 @@ import {
 import { loadKeypairFromFile } from "./keypair-utils.js";
 import { Constants } from './constants.js';
 import fetch from 'node-fetch';
-
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 let ownerKeypair = null;
 
