@@ -17,6 +17,8 @@ import { loadKeypairFromFile } from "./keypair-utils.js";
 import { Constants } from './constants.js';
 import fetch from 'node-fetch';
 
+const crypto = require('crypto');
+
 let ownerKeypair = null;
 
 // Connection to the cluster
@@ -130,7 +132,7 @@ async function sendSimpleMessage(message, delay)
     await notifyTelegramBot({
         messageType: "simple",
         messageText: message,
-        mediaUrl: 'http://ipfs.io/ipfs/bafkreigzg3tlqipquyzwvjhwmjgaqt7ncewdw2hqjbjabslazvgmf37ta4',
+        mediaUrl: 'http://ipfs.io/ipfs/bafybeiafg5xpibm4d2fhrtiucnoafzxwsefdftzvh62xttgks2nbwifg5e',
         isAnimated: false
     });
 
@@ -142,7 +144,6 @@ async function simulateJackpotDraw(luckyOldHolder, luckyNewHolder, oldHoldersSha
 {
     //sendCommand("/lock all");
 
-    await sendSimpleMessage("Checking current balance...", 5000);
     const totalDrawAmount = oldHoldersShare + newHoldersShare;
     await sendSimpleMessage(`Balance OK (${totalDrawAmount.toFixed(3)} SOL). Proceeding with the jackpot draw!`, 5000);
 
@@ -248,6 +249,13 @@ async function getHoldersShareOfJackpot(jackpotAmount, holderAccount, totalSuppl
     }
 }
 
+// Cryptographic random number genereator
+function getRandomIndex(arrayLength) {
+    const randomBytes = crypto.randomBytes(4); // generate 4 random bytes
+    const randomValue = randomBytes.readUInt32BE(0); // convert to a 32-bit unsigned integer
+    return randomValue % arrayLength; // map to the array length
+}
+
 async function drawJackpot(currentHolders, newHolders, drawAmount)
 {
     // Draw the jackpot
@@ -270,7 +278,7 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
         const maxAttempts = 100; // prevent infinite loop in case of edge cases
 
         do {
-            luckyOldHolder = currentHolders[Math.floor(Math.random() * currentHolders.length)];
+            luckyOldHolder = currentHolders[getRandomIndex(currentHolders.length)];
             attempts++;
         } while (newHolders.includes(luckyOldHolder) && attempts < maxAttempts);
 
@@ -287,7 +295,7 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
 
     // Find a random new holder
     if (newHolders.length !== 0) {
-        luckyNewHolder = newHolders[Math.floor(Math.random() * newHolders.length)];
+        luckyNewHolder = newHolders[getRandomIndex(newHolders.length)];
         console.log("Found lucky new holder:", luckyNewHolder);
         newHoldersShare = await getHoldersShareOfJackpot(newHoldersJackpotFund, luckyNewHolder, totalSupply);
     } else {
@@ -354,6 +362,8 @@ async function handleJackpots() {
         // Always reserve some SOL for fees
         currBalance = Math.max(0, currBalance - 0.01);
 
+        await sendSimpleMessage("Verifying account balance...", 5000);
+
         if (currBalance > Constants.kJackpotThreshold) {
             console.log(`Jackpot wallet balance: ${currBalance} SOL`);
 
@@ -365,16 +375,15 @@ async function handleJackpots() {
                 await drawJackpot(holderAddresses, newHolders, currBalance);
             } else {
                 console.log("No holders to draw the jackpot for.");
+                await sendSimpleMessage("No holders to draw the jackpot for.", 5000);
             }
         } else {
             console.log("Insufficient balance to draw the jackpot.");
-
-            // Wait for predefined time period before rechecking
-            setTimeout(handleJackpots, Constants.kJackpotCheckInterval * 60 * 1000);
+            await sendSimpleMessage(`Jackpot draw requires more SOL.\nCurrent balance: (${currBalance.toFixed(3)} SOL.\nCurrent threshold: ${Constants.kJackpotThreshold} SOL.\nI'll check again in 1 hour!`);
         }
     } catch (error) {
         console.error("Error handling jackpots:", error);
-        
+    } finally {
         // Retry after predefined time period in case of an error
         setTimeout(handleJackpots, Constants.kJackpotCheckInterval * 60 * 1000);
     }
