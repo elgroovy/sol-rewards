@@ -226,11 +226,15 @@ async function simulateJackpotDraw(luckyOldHolder, luckyNewHolder, oldHoldersSha
     //sendCommand("/unlock all");
 }
 
-async function getHodlersShareOfJackpot(jackpotAmount, holderAccount, totalSupply)
+async function getHoldersShareOfJackpot(jackpotAmount, holderAccount, totalSupply)
 {
     try {
-        const tokenAccount = new PublicKey(holderAccount);
-        let tokenAmount = await connection.getTokenAccountBalance(tokenAccount);
+        const holderAccountPubkey = new PublicKey(holderAccount);
+        let tokenAccounts = await connection.getTokenAccountsByOwner(holderAccountPubkey, {mint: new PublicKey(Constants.kTokenMintPubkey)});
+        if (tokenAccounts.value.length === 0) {
+            throw new Error("No token accounts found for the holder.");
+        }
+        let tokenAmount = await connection.getTokenAccountBalance(tokenAccounts.value[0].pubkey);
         const tokenBalance = tokenAmount.value.amount;
         // Map the 0.0 - 0.5% of the supply to 0.0 - 1.0 of the jackpot amount.
         // 0.5% would let them take the whole jackpot.
@@ -275,7 +279,7 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
             luckyOldHolder = null;
         } else {
             console.log("Found lucky old holder:", luckyOldHolder);
-            oldHoldersShare = await getHodlersShareOfJackpot(oldHoldersJackpotFund, luckyOldHolder, totalSupply);
+            oldHoldersShare = await getHoldersShareOfJackpot(oldHoldersJackpotFund, luckyOldHolder, totalSupply);
         }
     } else {
         console.log("No old holders to send the jackpot to.");
@@ -285,7 +289,7 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
     if (newHolders.length !== 0) {
         luckyNewHolder = newHolders[Math.floor(Math.random() * newHolders.length)];
         console.log("Found lucky new holder:", luckyNewHolder);
-        newHoldersShare = await getHodlersShareOfJackpot(newHoldersJackpotFund, luckyNewHolder, totalSupply);
+        newHoldersShare = await getHoldersShareOfJackpot(newHoldersJackpotFund, luckyNewHolder, totalSupply);
     } else {
         console.log("No new holders to send the jackpot to.");
     }
@@ -327,8 +331,9 @@ async function getCurrentHoldersSnapshot()
                 TOKEN_2022_PROGRAM_ID
             );
 
-            const accountPubkey = accountInfo.pubkey.toBase58();
-            if (excludedWallets.has(accountPubkey) || Number(account.amount) < Constants.kJackpotEligibilityMinHolding) {
+            const accountPubkey = account.owner.toBase58();
+            const tokenAmount = Number(account.amount) / Math.pow(10, Constants.kTokenDecimals);
+            if (excludedWallets.has(accountPubkey) || tokenAmount < Constants.kJackpotEligibilityMinHolding) {
                 continue;
             }
 
