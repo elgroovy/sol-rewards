@@ -139,12 +139,11 @@ async function sendSimpleMessage(message, delay)
     await new Promise(resolve => setTimeout(resolve, delay));
 }
 
-async function simulateJackpotDraw(luckyOldHolder, luckyNewHolder, oldHoldersShare, newHoldersShare)
+async function simulateJackpotDraw(jackpotBalance, luckyOldHolder, luckyNewHolder, oldHoldersShare, newHoldersShare)
 {
     //sendCommand("/lock all");
 
-    const totalDrawAmount = oldHoldersShare + newHoldersShare;
-    await sendSimpleMessage(`Balance OK (${totalDrawAmount.toFixed(3)} SOL). Proceeding with the jackpot draw!`, 5000);
+    await sendSimpleMessage(`Balance OK (${jackpotBalance.toFixed(3)} SOL). Proceeding with the jackpot draw!`, 5000);
 
     await notifyTelegramBot({
         messageType: "simple",
@@ -301,7 +300,7 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
         console.log("No new holders to send the jackpot to.");
     }
 
-    await simulateJackpotDraw(luckyOldHolder, luckyNewHolder, oldHoldersShare, newHoldersShare);
+    await simulateJackpotDraw(drawAmount, luckyOldHolder, luckyNewHolder, oldHoldersShare, newHoldersShare);
 }
 
 async function getCurrentHoldersSnapshot()
@@ -373,8 +372,8 @@ async function handleJackpots() {
                 const newHolders = await updateHoldersSnapshot(holderAddresses);
                 await drawJackpot(holderAddresses, newHolders, currBalance);
             } else {
-                console.log("No holders to draw the jackpot for.");
-                await sendSimpleMessage("No holders to draw the jackpot for.", 5000);
+                console.log("No eligible holders found for the jackpot draw.");
+                await sendSimpleMessage("No eligible holders found for the jackpot draw.");
             }
         } else {
             console.log("Insufficient balance to draw the jackpot.");
