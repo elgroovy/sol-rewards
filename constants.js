@@ -24,7 +24,8 @@ export const Constants = {
     // Reward distribution settings
     kMinWithheldBalance : 0.1,      // Minimum witheld balance to withdraw for rewards
     kTokensToAccumulate : 10000,    // Start distributing rewards when this amount of tokens is accumulated
-    kTreasuryPercent : 30,          // This results in 3% for treasury and the rest (7%) for holders and burned
+    kJackpotPercent : 30,           // 3% of the rewards go to the jackpot
+    kTreasuryPercent : 20,          // 2% for treasury and the rest (5%) for holders
     kBurnPercent : 0,               // Burns are disabled for now
     kSolToReserve: 0.1,             // 0.1 SOL to reserve for fees
     kSolMinLimit : 0.001,           // 0.001 SOL is the minimum we can send to a holder, to save on TX fees
@@ -32,8 +33,9 @@ export const Constants = {
     kSwapSlippage : 50,             // 0.5% slippage
 
     // Jackpot settings
-    kJackpotThreshold : 1,          // 1 SOL
-    kJackpotDrawInterval : 10,      // 10 minutes
-    kOldHoldersShare : 0.2,         // 20% of the jackpot goes to old holders
-    kNewHoldersShare : 0.8,         // 80% of the jackpot goes to new holders
+    kJackpotThreshold : 0.1 /*0.5*/,            // 0.5 SOL
+    kJackpotEligibilityMinHolding : 10_000,     // 10,000 tokens
+    kJackpotCheckInterval : 60,                 // 60 minutes
+    kOldHoldersShare : 0.2,                     // 20% of the jackpot goes to old holders
+    kNewHoldersShare : 0.8,                     // 80% of the jackpot goes to new holders
 };

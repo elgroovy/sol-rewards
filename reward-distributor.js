@@ -157,7 +157,7 @@ async function distributeRewards() {
         const mint = new PublicKey(Constants.kTokenMintPubkey); 
 
         // Connection to the cluster
-        const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
+        const connection = new Connection(Constants.kHeliusRPCEndpoint, "confirmed");
 
         // Get the token account of the owner
         const tokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -221,24 +221,39 @@ async function distributeRewards() {
             // Always reserve some SOL for fees
             accountBalance -= Constants.kSolToReserve * LAMPORTS_PER_SOL;
 
-            // Send SOL to the treasury wallet
+            // Divide the remaining accountBalance between the jackpot, treasury, and holders
+            const jackpotLamports = Math.floor(accountBalance * (Constants.kJackpotPercent / 100));
             const treasuryLamports = Math.floor(accountBalance * (Constants.kTreasuryPercent / 100));
+            const holdersLamports = accountBalance - jackpotLamports - treasuryLamports;
+
+            // Send SOL to the jackpots wallet
+            console.log(`Sending ${jackpotLamports / LAMPORTS_PER_SOL} SOL to the jackpots wallet...`);
+            const jackpotWallet = new PublicKey(Constants.kJackpotWalletPubKey);
+            const jackpotTransferTransaction = new Transaction().add(
+                SystemProgram.transfer({
+                  fromPubkey: ownerKeypair.publicKey,
+                  toPubkey: jackpotWallet,
+                  lamports: jackpotLamports,
+                }),
+            );
+            const jackpotSig = await sendAndConfirmTransaction(connection, jackpotTransferTransaction, [ownerKeypair]);
+            console.log(`Sent to jackpot. Signature: https://solscan.io/tx/${jackpotSig}?cluster=${Constants.kSolanaNetwork}`);
+
+            // Send SOL to the treasury wallet
             console.log(`Sending ${treasuryLamports / LAMPORTS_PER_SOL} SOL to the treasury wallet...`);
             const treasuryWallet = new PublicKey(Constants.kTreasuryWalletPubkey);
-            const transferTransaction = new Transaction().add(
+            const treasuryTransferTransaction = new Transaction().add(
                 SystemProgram.transfer({
                   fromPubkey: ownerKeypair.publicKey,
                   toPubkey: treasuryWallet,
                   lamports: treasuryLamports,
                 }),
             );
-            const signature = await sendAndConfirmTransaction(connection, transferTransaction, [ownerKeypair]);
-            console.log(`Sent to treasury. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
-
-            accountBalance -= treasuryLamports;
+            const treasurySig = await sendAndConfirmTransaction(connection, treasuryTransferTransaction, [ownerKeypair]);
+            console.log(`Sent to treasury. Signature: https://solscan.io/tx/${treasurySig}?cluster=${Constants.kSolanaNetwork}`);
 
             // Send the rest to the holders
-            await distributeSolToHolders(connection, accountBalance);
+            await distributeSolToHolders(connection, holdersLamports);
         }
     } catch (error) {
         console.error("An error occurred during the reward distribution process:", error);

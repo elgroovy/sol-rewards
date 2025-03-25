@@ -1,11 +1,14 @@
 import {
     Connection,
-    Keypair,
+    SystemProgram,
+    Transaction,
     PublicKey,
+    sendAndConfirmTransaction,
     LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 
 import {
+    getMint,
     unpackAccount,
     TOKEN_2022_PROGRAM_ID
 } from "@solana/spl-token";
@@ -65,17 +68,32 @@ async function updateHoldersSnapshot(addresses)
     }
 }
 
-async function getJackpotBalance()
+async function sendEarnedSolToWallets(walletsToSendTo)
 {
-    //return 3; // simulate the jackpot balance
+    const instructions = [];
+    for (const wallet of walletsToSendTo) {
+        console.log(`Sending ${wallet.solEarned} SOL to holder ${wallet.walletAddress}...`);
 
-    // Get current SOL balance
-    return await connection.getBalance(ownerKeypair.publicKey);
-}
+        const targetWalletPubkey = new PublicKey(wallet.walletAddress);
+        instructions.push(
+            SystemProgram.transfer({
+                fromPubkey: ownerKeypair.publicKey,
+                toPubkey: targetWalletPubkey,
+                lamports: Math.round(Number(wallet.solEarned) * LAMPORTS_PER_SOL),
+            }),
+        );
+    }
+   
+    if (instructions.length !== 0) {
+        const transferTransaction = new Transaction().add(...instructions);
+        const signature = await sendAndConfirmTransaction(connection, transferTransaction, [ownerKeypair]);
+        const txUrl = `https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`;
+        console.log(`TX Sent. Signature: ${txUrl}`);
+        
+        return txUrl;
+    }
 
-async function sendSolToHolder(walletAddress, solAmount)
-{
-    console.log(`Sending ${solAmount} SOL to holder ${walletAddress}...`);
+    throw new Error("No instructions to send SOL to holders.");
 }
 
 async function notifyTelegramBot(notificationPayloud)
@@ -156,38 +174,74 @@ async function simulateJackpotDraw(luckyOldHolder, luckyNewHolder, oldHoldersSha
 
     await new Promise(resolve => setTimeout(resolve, 5000));
 
+    let walletsToSendTo = [];
+    
     let messageText = "";
-    if (luckyOldHolder)
+    if (luckyOldHolder && oldHoldersShare > 0)
     {
         const formattedOldHolder = `${luckyOldHolder.slice(0, 4)}...${luckyOldHolder.slice(-4)}`;
         messageText += `${formattedOldHolder}\n🔥 OLD holder, winning ${oldHoldersShare.toFixed(4)} SOL!\n\n`;
+
+        walletsToSendTo.push({
+            walletAddress: luckyOldHolder,
+            solEarned: oldHoldersShare
+        });
     }
 
-    if (luckyNewHolder)
+    if (luckyNewHolder && newHoldersShare > 0)
     {
         const formattedNewHolder = `${luckyNewHolder.slice(0, 4)}...${luckyNewHolder.slice(-4)}`;
         messageText += `${formattedNewHolder}\n🔥 NEW holder, winning ${newHoldersShare.toFixed(4)} SOL!\n\n`;
+
+        walletsToSendTo.push({
+            walletAddress: luckyNewHolder,
+            solEarned: newHoldersShare
+        });
     }
-    messageText += `👏 Congratulations! 👏 \n[TX](https://solscan.io/tx/fake_transaction_url)`;
 
-    await notifyTelegramBot({
-        messageType: "simple",
-        messageText: messageText,
-        mediaUrl: 'http://ipfs.io/ipfs/bafybeicj3vtbn57fhsqdndrr45pndm2vtblfpege2tsheyn47zvilkvcke',
-        isAnimated: true
-    });
+    if (walletsToSendTo.length > 0)
+    {
+        const txUrl = await sendEarnedSolToWallets(walletsToSendTo);
 
-    // Wait couple seconds...
-    await new Promise(resolve => setTimeout(resolve, 2000));
+        messageText += `👏 Congratulations! 👏 \n[TX](${txUrl})`;
+
+        await notifyTelegramBot({
+            messageType: "simple",
+            messageText: messageText,
+            mediaUrl: 'http://ipfs.io/ipfs/bafybeicj3vtbn57fhsqdndrr45pndm2vtblfpege2tsheyn47zvilkvcke',
+            isAnimated: true
+        });
+    }
+    else
+    {
+        messageText = `Oh snap, nobody won this time! 😩`;
+
+        await notifyTelegramBot({
+            messageType: "simple",
+            messageText: messageText,
+            mediaUrl: 'http://ipfs.io/ipfs/bafybeidfoeal4c6g5xopnkoi5wdjl2ifhwwrjcjiaojv5ujrsqh7lamd3e',
+            isAnimated: true
+        });
+    }
 
     //sendCommand("/unlock all");
+}
 
-    // Send SOL to the holders as the very last step
-    if (luckyOldHolder) {
-        await sendSolToHolder(luckyOldHolder, oldHoldersShare);
+async function getHodlersShareOfJackpot(jackpotAmount, holderAccount, totalSupply)
+{
+    try {
+        const tokenAccount = new PublicKey(holderAccount);
+        let tokenAmount = await connection.getTokenAccountBalance(tokenAccount);
+        const tokenBalance = tokenAmount.value.amount;
+        // Map the 0.0 - 0.5% of the supply to 0.0 - 1.0 of the jackpot amount.
+        // 0.5% would let them take the whole jackpot.
+        // This is to let people with less than 1% of the supply still have a good win. It'll be hard to acquire 1% of the supply anyway.
+        const holderSupplyNormalized = Math.min(1.0, Math.max(0.0, 200 * Number(tokenBalance) / Number(totalSupply)));
+        return jackpotAmount * holderSupplyNormalized;
     }
-    if (luckyNewHolder) {
-        await sendSolToHolder(luckyNewHolder, newHoldersShare);
+    catch (error) {
+        console.error("Failed to retrieve token account balance:", error);
+        return 0;
     }
 }
 
@@ -197,11 +251,15 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
     console.log("Drawing the jackpot...");
 
     // Split the jackpot between old and new holders
-    const oldHoldersShare = drawAmount * Constants.kOldHoldersShare;
-    const newHoldersShare = drawAmount * Constants.kNewHoldersShare;
+    const oldHoldersJackpotFund = drawAmount * Constants.kOldHoldersShare;
+    const newHoldersJackpotFund = drawAmount * Constants.kNewHoldersShare;
 
-    let luckyOldHolder = null;
-    let luckyNewHolder = null;
+    let oldHoldersShare = 0, newHoldersShare = 0;
+    let luckyOldHolder = null, luckyNewHolder = null;
+
+    // Fetch the total supply from the mint account
+    const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), {commitment: "confirmed"}, TOKEN_2022_PROGRAM_ID);
+    const totalSupply = mintAccount.supply;
 
     // Find a random old holder
     if (currentHolders.length !== 0) {
@@ -218,6 +276,7 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
             luckyOldHolder = null;
         } else {
             console.log("Found lucky old holder:", luckyOldHolder);
+            oldHoldersShare = await getHodlersShareOfJackpot(oldHoldersJackpotFund, luckyOldHolder, totalSupply);
         }
     } else {
         console.log("No old holders to send the jackpot to.");
@@ -227,6 +286,7 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
     if (newHolders.length !== 0) {
         luckyNewHolder = newHolders[Math.floor(Math.random() * newHolders.length)];
         console.log("Found lucky new holder:", luckyNewHolder);
+        newHoldersShare = await getHodlersShareOfJackpot(newHoldersJackpotFund, luckyNewHolder, totalSupply);
     } else {
         console.log("No new holders to send the jackpot to.");
     }
@@ -256,13 +316,25 @@ async function getCurrentHoldersSnapshot()
             Constants.kTreasuryWalletPubkey,
             ownerKeypair.publicKey.toBase58(), // Jackpot wallet
             Constants.kBurnWalletPubkey,
-            Constants.kRaydiumVaultAuthority2 // Rayiudm pool
+            Constants.kRaydiumVaultAuthority2 // Raydium pool
         ]);
 
-        // Grab all addresses
-        const holderAddresses = allAccounts
-            .map((accountInfo) => accountInfo.pubkey.toBase58())
-            .filter((address) => !excludedWallets.has(address));
+        // Grab all addresses that meet the minimum holding requirement
+        const holderAddresses = [];
+        for (const accountInfo of allAccounts) {
+            const account = unpackAccount(
+                accountInfo.pubkey,
+                accountInfo.account,
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            const accountPubkey = accountInfo.pubkey.toBase58();
+            if (excludedWallets.has(accountPubkey) || Number(account.amount) < Constants.kJackpotEligibilityMinHolding) {
+                continue;
+            }
+
+            holderAddresses.push(accountPubkey);
+        }
 
         return holderAddresses;
     } catch (error) {
@@ -271,33 +343,37 @@ async function getCurrentHoldersSnapshot()
     }
 }
 
-async function main(currentHolders = []) {
+async function handleJackpots() {
+    try {
+        let accountBalance = await connection.getBalance(ownerKeypair.publicKey);
+        let currBalance = accountBalance / LAMPORTS_PER_SOL;
+        // Always reserve some SOL for fees
+        currBalance = Math.max(0, currBalance - 0.01);
 
-    connection.onAccountChange(
-        new PublicKey(Constants.kJackpotWalletPubKey),
-        async (account, context) => {
-          if (account.lamports > /*LAMPORTS_PER_SOL*/ 1) {
-            const currBalance = account.lamports / LAMPORTS_PER_SOL;
+        if (currBalance > Constants.kJackpotThreshold) {
             console.log(`Jackpot wallet balance: ${currBalance} SOL`);
-    
-            // Check if the jackpot balance is enough to draw
-            if (currBalance < Constants.kJackpotThreshold) {
-                console.log("Insufficient balance to draw the jackpot.");
-                //return;
-            }
-    
+
+            // Grab the current holders snapshot
             const holderAddresses = await getCurrentHoldersSnapshot();
             if (holderAddresses.length > 0) {
+                // Store the snapshot on the server
                 const newHolders = await updateHoldersSnapshot(holderAddresses);
                 await drawJackpot(holderAddresses, newHolders, currBalance);
             } else {
                 console.log("No holders to draw the jackpot for.");
             }
-          }
-        },
-        "processed",
-        { encoding: "base64", dataSlice: { offset: 0, length: 100 }}
-    );
+        } else {
+            console.log("Insufficient balance to draw the jackpot.");
+
+            // Wait for predefined time period before rechecking
+            setTimeout(handleJackpots, Constants.kJackpotCheckInterval * 60 * 1000);
+        }
+    } catch (error) {
+        console.error("Error handling jackpots:", error);
+        
+        // Retry after predefined time period in case of an error
+        setTimeout(handleJackpots, Constants.kJackpotCheckInterval * 60 * 1000);
+    }
 }
 
 // Load the owner wallet keypair
@@ -309,4 +385,8 @@ try {
     throw error;
 }
 
-await main().catch((error) => console.log(error));
+// Run it once first
+await handleJackpots().catch(console.error);
+
+// Keep the application running
+process.stdin.resume();

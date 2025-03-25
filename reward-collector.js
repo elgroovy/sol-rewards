@@ -30,7 +30,7 @@ async function collectFees() {
   const mint = new PublicKey(Constants.kTokenMintPubkey); 
   
   // Connection to the cluster
-  const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
+  const connection = new Connection(Constants.kHeliusRPCEndpoint, "confirmed");
   
   // Retrieve all Token Accounts for the Mint Account
   const allAccounts = await connection.getProgramAccounts(TOKEN_2022_PROGRAM_ID, {
