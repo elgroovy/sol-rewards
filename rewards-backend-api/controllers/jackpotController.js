@@ -12,7 +12,7 @@ bot.on('message', (msg) => {
     const messageText = msg.text;
   
     if (messageText === '/jackpot') {
-        const msg = `You wanna pay for jackpot\\?`;
+        const msg = `You meant JackBOT\\? That\\'s me\\!`;
         console.log(msg);
       bot.sendMessage(chatId, msg, {parse_mode: 'MarkdownV2'});
     }

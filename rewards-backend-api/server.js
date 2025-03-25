@@ -1,6 +1,6 @@
 const express = require('express');
 
-//const rewardRoutes = require('./routes/rewardRoutes');
+const rewardRoutes = require('./routes/rewardRoutes');
 const jackpotRoutes = require('./routes/jackpotRoutes');
 
 const app = express();
@@ -10,7 +10,7 @@ const port = 3000;
 app.use(express.json());
 
 // Routes
-//app.use('/api/rewards', rewardRoutes);
+app.use('/api/rewards', rewardRoutes);
 app.use('/api/jackpots', jackpotRoutes);
 
 
