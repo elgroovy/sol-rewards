@@ -3,9 +3,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const token = '7665493064:AAE5oXMgvUFp3x6tDzQEVSygelEVYavDWDQ';
 const chatId = -1002183224911; //-1002333200183;
 
-const bot = new TelegramBot(token, { polling: true });
+/*const bot = new TelegramBot(token, { polling: true });
 
-/*bot.on('message', (msg) => {
+bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const messageText = msg.text;
   
