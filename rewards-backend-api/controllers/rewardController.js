@@ -29,7 +29,7 @@ const notify = async (req, res) => {
         return res.status(400).send({ success: false, error: 'Invalid JSON structure. Ensure messageType, wallets, and transactionUrl are provided.' });
     }
 
-    let formattedMessage = `💲 *${messageType.toUpperCase()} NOTIFICATION* 💲\n\nTurns out, testing pays. Who knew? 🤫\n\n`;
+    let formattedMessage = `💲 *${messageType.toUpperCase()} NOTIFICATION* 💲\n\nTo Test or Not to Test, That is the Question... 🤫\n\n`;
 
     let txTotal = 0.0;
 
