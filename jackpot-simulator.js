@@ -377,7 +377,7 @@ async function handleJackpots() {
             }
         } else {
             console.log("Insufficient balance to draw the jackpot.");
-            await sendSimpleMessage(`Jackpot draw requires more SOL.\nCurrent balance: (${currBalance.toFixed(3)} SOL.\nCurrent threshold: ${Constants.kJackpotThreshold} SOL.\nI'll check again in 1 hour!`);
+            await sendSimpleMessage(`Jackpot draw requires more SOL.\nCurrent balance: ${currBalance.toFixed(3)} SOL.\nCurrent threshold: ${Constants.kJackpotThreshold} SOL.\nI'll check again in 1 hour!`);
         }
     } catch (error) {
         console.error("Error handling jackpots:", error);
