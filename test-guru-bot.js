@@ -44,8 +44,13 @@ async function main() {
 
         // Respond when the bot is mentioned or replied to
         if (msg.text && (msg.text.includes(`@${botInfo.username}`) || msg.reply_to_message?.from?.username === botInfo.username)) {
+            const escapeMarkdownV2 = (text) => {
+                return text.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+            };
+
             const response = await chat.sendMessage({ message: msg.text });
-            bot.sendMessage(chatId, response.text, { parse_mode: 'MarkdownV2' });
+            const escapedText = escapeMarkdownV2(response.text);
+            bot.sendMessage(chatId, escapedText, { parse_mode: 'MarkdownV2' });
         }
     });
 }
