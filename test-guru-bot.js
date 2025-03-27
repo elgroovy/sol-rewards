@@ -5,7 +5,7 @@ import fs from 'fs';
 const GOOGLE_AI_API_KEY = 'AIzaSyDTz-epGmwh0ZQ9muOzfME8HWBt_pyTGt8';
 const TG_BOT_TOKEN = '7940512914:AAE5IGAtTQ7urC8LvPn-RFOQk15VHNdo5ME';
 
-const chatId = -1002475721758; //-1002333200183;
+const chatId = -1002333200183;
 
 async function main() {
     const ai = new GoogleGenAI({ apiKey: GOOGLE_AI_API_KEY});
