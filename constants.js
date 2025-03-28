@@ -33,7 +33,7 @@ export const Constants = {
     kSwapSlippage : 50,             // 0.5% slippage
 
     // Jackpot settings
-    kJackpotThreshold : 0.1 /*0.5*/,            // 0.5 SOL
+    kJackpotThreshold : 1.0,                    // 1.0 SOL
     kJackpotEligibilityMinHolding : 10_000,     // 10,000 tokens
     kJackpotCheckInterval : 60,                 // 60 minutes
     kOldHoldersShare : 0.2,                     // 20% of the jackpot goes to old holders
