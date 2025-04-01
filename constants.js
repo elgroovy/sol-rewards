@@ -13,7 +13,9 @@ export const Constants = {
     kFeeRecipientWalletKeyFile : "~/sol-rewards/keys/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES.json",
     kFeeRecipientWalletPubkey : "nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES",
     
+    kTreasuryWalletKeyFile : "~/sol-rewards/keys/LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA.json",
     kTreasuryWalletPubkey : "LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA",
+
     kBurnWalletPubkey : "M7HR93zu4ToKFeAzpta96S1mpC2KJu9o2fXZhjtBURN",
 
     kJackpotWalletKeyFile : "~/sol-rewards/keys/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK.json",
@@ -34,8 +36,9 @@ export const Constants = {
 
     // Jackpot settings
     kJackpotThreshold : 1.0,                    // 1.0 SOL
-    kJackpotEligibilityMinHolding : 10_000,     // 10,000 tokens
-    kJackpotCheckInterval : 60,                 // 60 minutes
+    kJackpotEligibilityMinHolding : 100_000,    // 100,000 tokens
+    kJackpotCheckInterval : 120,                // 120 minutes
+    kTreasuryShareOfJackpot: 0.6,               // 60% of the treasury goes to the jackpot
     kOldHoldersShare : 0.2,                     // 20% of the jackpot goes to old holders
-    kNewHoldersShare : 0.8,                     // 80% of the jackpot goes to new holders
+    kNewHoldersShare : 0.5,                     // 50% of the jackpot goes to new holders
 };

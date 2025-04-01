@@ -17,11 +17,15 @@ import { loadKeypairFromFile } from "./keypair-utils.js";
 import { Constants } from './constants.js';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
+import WebSocket from 'ws';
 
-let ownerKeypair = null;
+let jackpotKeypair, treasuryKeypair = null;
 
 // Connection to the cluster
 const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
+
+// Establish a WebSocket connection to monitor the Treasury account
+const ws = new WebSocket(Constants.kHeliusRPCEndpoint);
 
 async function getLastHoldersSnapshot()
 {
@@ -78,7 +82,7 @@ async function sendEarnedSolToWallets(walletsToSendTo)
         const targetWalletPubkey = new PublicKey(wallet.walletAddress);
         instructions.push(
             SystemProgram.transfer({
-                fromPubkey: ownerKeypair.publicKey,
+                fromPubkey: jackpotKeypair.publicKey,
                 toPubkey: targetWalletPubkey,
                 lamports: Math.round(Number(wallet.solEarned) * LAMPORTS_PER_SOL),
             }),
@@ -87,7 +91,7 @@ async function sendEarnedSolToWallets(walletsToSendTo)
    
     if (instructions.length !== 0) {
         const transferTransaction = new Transaction().add(...instructions);
-        const signature = await sendAndConfirmTransaction(connection, transferTransaction, [ownerKeypair]);
+        const signature = await sendAndConfirmTransaction(connection, transferTransaction, [jackpotKeypair]);
         const txUrl = `https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`;
         console.log(`TX Sent. Signature: ${txUrl}`);
         
@@ -128,7 +132,7 @@ async function sendCommand(commmand)
 
 async function sendSimpleMessage(message, delay)
 {
-    await notifyTelegramBot({
+        await notifyTelegramBot({
         messageType: "simple",
         messageText: message,
         mediaUrl: 'http://ipfs.io/ipfs/bafkreickxiijov32aotpy4zki3hhfi6bwmgxdvvfmomafxc2fijcmh2p6i',
@@ -267,8 +271,8 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
     let luckyOldHolder = null, luckyNewHolder = null;
 
     // Fetch the total supply from the mint account
-    const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), {commitment: "confirmed"}, TOKEN_2022_PROGRAM_ID);
-    const totalSupply = mintAccount.supply;
+    /*const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), {commitment: "confirmed"}, TOKEN_2022_PROGRAM_ID);
+    const totalSupply = mintAccount.supply;*/
 
     // Find a random old holder
     if (currentHolders.length !== 0) {
@@ -285,19 +289,31 @@ async function drawJackpot(currentHolders, newHolders, drawAmount)
             luckyOldHolder = null;
         } else {
             console.log("Found lucky old holder:", luckyOldHolder);
-            oldHoldersShare = await getHoldersShareOfJackpot(oldHoldersJackpotFund, luckyOldHolder, totalSupply);
+            oldHoldersShare = oldHoldersJackpotFund; //await getHoldersShareOfJackpot(oldHoldersJackpotFund, luckyOldHolder, totalSupply);
         }
     } else {
-        console.log("No old holders to send the jackpot to.");
+        console.log("Cannot find any old holders.");
     }
 
     // Find a random new holder
     if (newHolders.length !== 0) {
         luckyNewHolder = newHolders[getRandomIndex(newHolders.length)];
         console.log("Found lucky new holder:", luckyNewHolder);
-        newHoldersShare = await getHoldersShareOfJackpot(newHoldersJackpotFund, luckyNewHolder, totalSupply);
+        newHoldersShare = newHoldersJackpotFund; //await getHoldersShareOfJackpot(newHoldersJackpotFund, luckyNewHolder, totalSupply);
     } else {
-        console.log("No new holders to send the jackpot to.");
+        console.log("Cannot find any new holders.");
+    }
+
+    // Determine the final winner
+    if (luckyOldHolder && luckyNewHolder) {
+        const isOldHolderWinner = getRandomIndex(2) === 0; // 50-50 chance
+        if (isOldHolderWinner) {
+            luckyNewHolder = null;
+            newHoldersShare = 0;
+        } else {
+            luckyOldHolder = null;
+            oldHoldersShare = 0;
+        }
     }
 
     await simulateJackpotDraw(drawAmount, luckyOldHolder, luckyNewHolder, oldHoldersShare, newHoldersShare);
@@ -323,7 +339,7 @@ async function getCurrentHoldersSnapshot()
         const excludedWallets = new Set([
             Constants.kFeeRecipientWalletPubkey,
             Constants.kTreasuryWalletPubkey,
-            ownerKeypair.publicKey.toBase58(), // Jackpot wallet
+            jackpotKeypair.publicKey.toBase58(), // Jackpot wallet
             Constants.kBurnWalletPubkey,
             Constants.kRaydiumVaultAuthority2 // Raydium pool
         ]);
@@ -353,9 +369,92 @@ async function getCurrentHoldersSnapshot()
     }
 }
 
+async function handleTreasuryAutoDistribute()
+{
+    ws.on('open', () => {
+        console.log("WebSocket connection established. Watching Treasury account for deposits...");
+    
+        // Subscribe to the Treasury account for SOL deposits
+        ws.send(JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "accountSubscribe",
+            params: [
+                Constants.kTreasuryWalletPubkey,
+                {
+                    commitment: "finalized",
+                    encoding: "jsonParsed"
+                }
+            ]
+        }));
+    });
+    
+    ws.on('message', async (data) => {
+        try {
+            const parsedData = JSON.parse(data);
+            if (parsedData.method === "accountNotification") {
+
+                const signatures = await connection.getSignaturesForAddress(new PublicKey(Constants.kTreasuryWalletPubkey), { limit: 1 });
+                const transferTx = await connection.getParsedTransaction(signatures[0].signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+                if (!transferTx) {
+                    console.error("Transaction not found.");
+                    return;
+                }
+                const parsedInstruction = transferTx.transaction.message.instructions[0];
+                if (parsedInstruction.parsed.type !== "transfer") {
+                    console.error("Not a transfer instruction.");
+                    return;
+                }
+                const parsedData = parsedInstruction.parsed;
+                if (parsedData.info.destination !== Constants.kTreasuryWalletPubkey) {
+                    console.error("Not a deposit to the Treasury account.");
+                    return;
+                }
+                
+                const lamportsSent = parsedData.info.lamports;
+    
+                console.log(`Treasury balance change detected: +${lamportsSent / LAMPORTS_PER_SOL} SOL`);
+    
+                // Check if there is a deposit
+                if (lamportsSent > Constants.kSolMinLimit * LAMPORTS_PER_SOL) {
+                    const jackpotShareLamports = lamportsSent * Constants.kTreasuryShareOfJackpot;
+                    const jackpotShare = jackpotShareLamports / LAMPORTS_PER_SOL;
+    
+                    console.log(`Sending ${jackpotShare} SOL to the jackpot wallet...`);
+    
+                    const transferTransaction = new Transaction().add(
+                        SystemProgram.transfer({
+                            fromPubkey: new PublicKey(Constants.kTreasuryWalletPubkey),
+                            toPubkey: jackpotKeypair.publicKey,
+                            lamports: jackpotShareLamports
+                        })
+                    );
+    
+                    const signature = await sendAndConfirmTransaction(connection, transferTransaction, [treasuryKeypair]);
+                    const txUrl = `https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`;
+                    console.log(`TX Sent. Signature: ${txUrl}`);
+                }
+            }
+        } catch (error) {
+            console.error("Error processing WebSocket message:", error);
+        }
+    });
+    
+    ws.on('error', (error) => {
+        console.error("WebSocket error:", error);
+    });
+    
+    ws.on('close', () => {
+        console.log("WebSocket connection closed. Reconnecting...");
+        setTimeout(() => {
+            process.stdin.resume(); // Restart the process to reconnect
+        }, 5000);
+    });
+}
+
 async function handleJackpots() {
     try {
-        let accountBalance = await connection.getBalance(ownerKeypair.publicKey);
+        let accountBalance = await connection.getBalance(jackpotKeypair.publicKey);
         let currBalance = accountBalance / LAMPORTS_PER_SOL;
         // Always reserve some SOL for fees
         currBalance = Math.max(0, currBalance - 0.01);
@@ -389,15 +488,18 @@ async function handleJackpots() {
 
 // Load the owner wallet keypair
 try {
-    ownerKeypair = await loadKeypairFromFile(Constants.kJackpotWalletKeyFile);
-    //console.log(`Owner public key: ${ownerKeypair.publicKey.toBase58()}`);
+    jackpotKeypair = await loadKeypairFromFile(Constants.kJackpotWalletKeyFile);
+    treasuryKeypair = await loadKeypairFromFile(Constants.kTreasuryWalletKeyFile);
 } catch (error) {
-    console.error("Failed to load the owner keypair:", error);
+    console.error("Failed to load the keypair:", error);
     throw error;
 }
 
 // Run it once first
-await handleJackpots().catch(console.error);
+//await handleJackpots().catch(console.error);
+
+// Watch for the account balance changes and auto-distribute to the jackpot wallet
+await handleTreasuryAutoDistribute();
 
 // Keep the application running
 process.stdin.resume();
