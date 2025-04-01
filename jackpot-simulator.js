@@ -445,9 +445,9 @@ async function handleTreasuryAutoDistribute()
     });
     
     ws.on('close', () => {
-        console.log("WebSocket connection closed. Reconnecting...");
+        console.log("WebSocket connection closed. Attempting to reconnect...");
         setTimeout(() => {
-            process.stdin.resume(); // Restart the process to reconnect
+            handleTreasuryAutoDistribute(); // Reinitialize the WebSocket connection
         }, 5000);
     });
 }
