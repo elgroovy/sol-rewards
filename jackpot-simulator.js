@@ -375,7 +375,10 @@ async function handleTreasuryAutoDistribute()
         console.log("WebSocket connection established. Watching Treasury account for deposits...");
 
         setInterval(() => {
-            ws.ping(); // Send a ping message
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.ping(); // Send a ping message
+                console.log('WS ping sent');
+            }
         }, 30000); // Every 30 seconds
     
         // Subscribe to the Treasury account for SOL deposits
@@ -437,6 +440,8 @@ async function handleTreasuryAutoDistribute()
                     const signature = await sendAndConfirmTransaction(connection, transferTransaction, [treasuryKeypair]);
                     const txUrl = `https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`;
                     console.log(`TX Sent. Signature: ${txUrl}`);
+                } else {
+                    console.log(`Min deposit not met. Ignoring...`);
                 }
             }
         } catch (error) {
