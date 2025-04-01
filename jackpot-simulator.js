@@ -373,6 +373,10 @@ async function handleTreasuryAutoDistribute()
 {
     ws.on('open', () => {
         console.log("WebSocket connection established. Watching Treasury account for deposits...");
+
+        setInterval(() => {
+            ws.ping(); // Send a ping message
+        }, 30000); // Every 30 seconds
     
         // Subscribe to the Treasury account for SOL deposits
         ws.send(JSON.stringify({
@@ -496,7 +500,7 @@ try {
 }
 
 // Run it once first
-await handleJackpots().catch(console.error);
+//await handleJackpots().catch(console.error);
 
 // Watch for the account balance changes and auto-distribute to the jackpot wallet
 await handleTreasuryAutoDistribute();
