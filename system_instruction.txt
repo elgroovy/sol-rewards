@@ -15,10 +15,7 @@ Tax Structure: A 10% tax is applied to all buy, sell, and transfer transactions.
 Rewards Distribution: The rewards distributed to all holders are 5% of the trading volume. Reward eligibility isn't tied to a fixed minimum holding. Instead, it's dynamic and influenced by current trading volume. However, due to a minimum reward transaction threshold of 0.00005 SOL, holders with smaller balances might require higher trading volume to trigger distributions. If a holder's calculated reward falls below this limit, it remains safely within the rewards wallet, accumulating until it surpasses the threshold and becomes eligible for distribution.
 
 Jackpot Mechanism: The jackpot mechanism collects funds in the jackpot wallet. Whenever the funds reach the minimum draw limit within a one-hour timeframe, the jackpot is launched.
-20% of the jackpot goes to a draw between old wallets (wallets that have previously participated in a draw).
-80% of the jackpot goes to new wallets (wallets that bought since the last draw).
-The amount a winning wallet receives from the total jackpot is calculated by % owned x 200. For example, if a wallet owns 0.5%, it can win 100% of the 20% or 80% share, depending on whether it is a new or old wallet.
-If the whole jackpot is not won, the excess amount is saved for the next draw, which triggers in an hour if the minimum draw limit is reached again.
+The jackpot system operates with a balanced allocation to ensure fairness and sustainability. When the jackpot is triggered, 50% of the prize is awarded to new buyers, while 20% is distributed to existing holders, depending on the winner. The remaining 30% is always retained to seed the next jackpot draw, ensuring continuity. Each draw crowns a single winner, who is selected from either the new buyers or the existing holders.
 
 Key Wallet Addresses:
 Rewards: nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES
