@@ -22,10 +22,10 @@ import WebSocket from 'ws';
 let jackpotKeypair, treasuryKeypair = null;
 
 // Connection to the cluster
-const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
+const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusDevnetRPCEndpoint, "confirmed");
 
 // Establish a WebSocket connection to monitor the Treasury account
-const ws = new WebSocket(Constants.kHeliusRPCEndpoint);
+const ws = new WebSocket(Constants.kHeliusDevnetRPCEndpoint);
 
 async function getLastHoldersSnapshot()
 {
@@ -505,7 +505,7 @@ try {
 }
 
 // Run it once first
-await handleJackpots().catch(console.error);
+//await handleJackpots().catch(console.error);
 
 // Watch for the account balance changes and auto-distribute to the jackpot wallet
 await handleTreasuryAutoDistribute();
