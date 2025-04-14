@@ -22,10 +22,7 @@ import WebSocket from 'ws';
 let jackpotKeypair, treasuryKeypair = null;
 
 // Connection to the cluster
-const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusDevnetRPCEndpoint, "confirmed");
-
-// Establish a WebSocket connection to monitor the Treasury account
-const ws = new WebSocket(Constants.kHeliusDevnetRPCEndpoint);
+const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
 
 async function getLastHoldersSnapshot()
 {
@@ -369,8 +366,11 @@ async function getCurrentHoldersSnapshot()
     }
 }
 
-async function handleTreasuryAutoDistribute()
-{
+async function handleTreasuryAutoDistribute() {
+
+    // Establish a WebSocket connection to monitor the Treasury account
+    const ws = new WebSocket(Constants.kHeliusRPCEndpoint);
+
     ws.on('open', () => {
         console.log("WebSocket connection established. Watching Treasury account for deposits...");
 
@@ -380,7 +380,7 @@ async function handleTreasuryAutoDistribute()
                 console.log('WS ping sent');
             }
         }, 30000); // Every 30 seconds
-    
+
         // Subscribe to the Treasury account for SOL deposits
         ws.send(JSON.stringify({
             jsonrpc: "2.0",
@@ -395,7 +395,7 @@ async function handleTreasuryAutoDistribute()
             ]
         }));
     });
-    
+
     ws.on('message', async (data) => {
         try {
             const parsedData = JSON.parse(data);
@@ -448,11 +448,11 @@ async function handleTreasuryAutoDistribute()
             console.error("Error processing WebSocket message:", error);
         }
     });
-    
+
     ws.on('error', (error) => {
         console.error("WebSocket error:", error);
     });
-    
+
     ws.on('close', () => {
         console.log("WebSocket connection closed. Attempting to reconnect...");
         setTimeout(() => {
@@ -504,11 +504,11 @@ try {
     throw error;
 }
 
-// Run it once first
-await handleJackpots().catch(console.error);
-
 // Watch for the account balance changes and auto-distribute to the jackpot wallet
 await handleTreasuryAutoDistribute();
+
+// Run it once first
+await handleJackpots().catch(console.error);
 
 // Keep the application running
 process.stdin.resume();
