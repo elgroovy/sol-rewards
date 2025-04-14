@@ -3,7 +3,7 @@ const db = require('../db');
 const TelegramBot = require('node-telegram-bot-api');
 
 const token = '8035972978:AAGzSnyLoerRufDc2ZpSdTqZzLc4Su3vLMM';
-const chatId = -1002333200183;
+const chatId = -1002183224911; //-1002333200183;
 
 const bot = new TelegramBot(token, { polling: true });
 
