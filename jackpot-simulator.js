@@ -505,7 +505,7 @@ try {
 }
 
 // Run it once first
-//await handleJackpots().catch(console.error);
+await handleJackpots().catch(console.error);
 
 // Watch for the account balance changes and auto-distribute to the jackpot wallet
 await handleTreasuryAutoDistribute();
