@@ -402,7 +402,7 @@ async function handleTreasuryAutoDistribute() {
         setInterval(() => {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.ping(); // Send a ping message
-                console.log('WS ping sent');
+                //console.log('WS ping sent');
             }
         }, 30000); // Every 30 seconds
 
