@@ -484,7 +484,7 @@ async function handleTreasuryAutoDistribute() {
 
                 let transferInstructions = [];
 
-                if (lamportsSent > 0) {
+                if (lamportsSent > Constants.kSolMinLimit * LAMPORTS_PER_SOL) {
                     console.log(`Treasury balance change detected: +${lamportsSent / LAMPORTS_PER_SOL} SOL`);
                     const jackpotShareLamports = lamportsSent * Constants.kTreasuryShareOfJackpot;
                     const jackpotShare = jackpotShareLamports / LAMPORTS_PER_SOL;
