@@ -461,7 +461,6 @@ async function handleTreasuryAutoDistribute() {
                 const instructions = transferTx.transaction.message.instructions;
                 let lamportsSent = 0;
                 let tokensSent = 0;
-                let tokenDecimals = 0;
 
                 let tokenProgramId = null;
 
@@ -473,9 +472,11 @@ async function handleTreasuryAutoDistribute() {
                         }
                     } else if (instruction.programId.equals(TOKEN_PROGRAM_ID)) {
                         // Handle token transfer
-                        if ((instruction.parsed.type === "transfer" || instruction.parsed.type === "transferChecked") && instruction.parsed.info.destination === accountPubkey) {
+                        if (instruction.parsed.type === "transfer" && instruction.parsed.info.destination === accountPubkey) {
+                            tokensSent += Number(instruction.parsed.info.amount);
+                            tokenProgramId = instruction.programId;
+                        } else if (instruction.parsed.type === "transferChecked" && instruction.parsed.info.destination === accountPubkey) {
                             tokensSent += Number(instruction.parsed.info.tokenAmount.amount);
-                            tokenDecimals = instruction.parsed.info.tokenAmount.decimals;
                             tokenProgramId = instruction.programId;
                         }
                     }
@@ -499,10 +500,10 @@ async function handleTreasuryAutoDistribute() {
                 }
 
                 if (tokensSent > 0) {
-                    console.log(`Treasury token balance change detected: +${tokensSent / Math.pow(10, tokenDecimals)} tokens`);
+                    console.log(`Treasury token balance change detected: +${tokensSent / Math.pow(10, Constants.kRewardTokenDecimals)} tokens`);
                     const jackpotShareTokens = tokensSent * Constants.kTreasuryShareOfJackpot;
 
-                    console.log(`Sending ${jackpotShareTokens / Math.pow(10, tokenDecimals)} tokens to the jackpot wallet...`);
+                    console.log(`Sending ${jackpotShareTokens / Math.pow(10, Constants.kRewardTokenDecimals)} tokens to the jackpot wallet...`);
 
                     const jackpotTokenAccount = await getOrCreateAssociatedTokenAccount(
                         connection,

@@ -22,6 +22,7 @@ export const Constants = {
     kJackpotWalletPubKey : "RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK",
 
     kRewardTokenMintPubkey : "C3DwDjT17gDvvCYC2nsdGHxDHVmQRdhKfpAdqQ29pump",
+    kRewardTokenDecimals : 6,
 
     kTokenDecimals: 6,
 
