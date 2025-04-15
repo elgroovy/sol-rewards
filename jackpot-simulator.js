@@ -10,9 +10,13 @@ import {
 import {
     getMint,
     unpackAccount,
-    TOKEN_2022_PROGRAM_ID
+    createTransferInstruction,
+    getOrCreateAssociatedTokenAccount,
+    TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID,
+    getAssociatedTokenAddressSync
 } from "@solana/spl-token";
 
+import { swapToken } from './jupiter-swap.js';
 import { loadKeypairFromFile } from "./keypair-utils.js";
 import { Constants } from './constants.js';
 import fetch from 'node-fetch';
@@ -367,11 +371,32 @@ async function getCurrentHoldersSnapshot()
 }
 
 async function handleTreasuryAutoDistribute() {
+    let rewardTokenAccount = null;
 
-    // Establish a WebSocket connection to monitor the Treasury account
+    if (Constants.kRewardTokenMintPubkey.length !== 0) {
+        // Determine the token program ID for the reward token mint
+        const mintAccountInfo = await connection.getAccountInfo(new PublicKey(Constants.kRewardTokenMintPubkey));
+        if (!mintAccountInfo) {
+            console.error("Failed to fetch mint account info for the reward token.");
+            return;
+        }
+
+        const tokenProgramId = mintAccountInfo.owner;
+
+        // Compute the associated token account for the reward token mint
+        rewardTokenAccount = getAssociatedTokenAddressSync(
+            new PublicKey(Constants.kRewardTokenMintPubkey),
+            new PublicKey(Constants.kTreasuryWalletPubkey),
+            true, // allow owner to be off-curve
+            tokenProgramId
+        );
+    }
+
+    const subscriptionMap = new Map(); // map to store subscription IDs
+    
     const ws = new WebSocket(Constants.kHeliusRPCEndpoint);
 
-    ws.on('open', () => {
+    ws.on('open', async () => {
         console.log("WebSocket connection established. Watching Treasury account for deposits...");
 
         setInterval(() => {
@@ -381,7 +406,7 @@ async function handleTreasuryAutoDistribute() {
             }
         }, 30000); // Every 30 seconds
 
-        // Subscribe to the Treasury account for SOL deposits
+        // Subscribe to the Treasury wallet for SOL deposits
         ws.send(JSON.stringify({
             jsonrpc: "2.0",
             id: 1,
@@ -394,54 +419,119 @@ async function handleTreasuryAutoDistribute() {
                 }
             ]
         }));
+
+        // Subscribe to the reward token account
+        ws.send(JSON.stringify({
+            jsonrpc: "2.0",
+            id: 2,
+            method: "accountSubscribe",
+            params: [
+                rewardTokenAccount.toBase58(),
+                {
+                    commitment: "finalized",
+                    encoding: "jsonParsed"
+                }
+            ]
+        }));
+        console.log(`Subscribed to reward token account: ${rewardTokenAccount.toBase58()}`);
     });
 
     ws.on('message', async (data) => {
         try {
             const parsedData = JSON.parse(data);
-            if (parsedData.method === "accountNotification") {
 
-                const signatures = await connection.getSignaturesForAddress(new PublicKey(Constants.kTreasuryWalletPubkey), { limit: 1 });
+            // Handle subscription response to map id -> subscriptionId
+            if (parsedData.id && parsedData.result) {
+                subscriptionMap.set(parsedData.id, parsedData.result);
+                console.log(`Mapped id ${parsedData.id} to subscriptionId ${parsedData.result}`);
+                return;
+            }
+
+            if (parsedData.method === "accountNotification") {
+                const accountPubkey = (parsedData.params.subscription == subscriptionMap.get(1)) ? Constants.kTreasuryWalletPubkey : rewardTokenAccount.toBase58();
+
+                // Fetch recent transactions for the account
+                const signatures = await connection.getSignaturesForAddress(new PublicKey(accountPubkey), { limit: 1 });
                 const transferTx = await connection.getParsedTransaction(signatures[0].signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
                 if (!transferTx) {
                     console.error("Transaction not found.");
                     return;
                 }
-                const parsedInstruction = transferTx.transaction.message.instructions[0];
-                if (parsedInstruction.parsed.type !== "transfer") {
-                    console.error("Not a transfer instruction.");
-                    return;
+
+                const instructions = transferTx.transaction.message.instructions;
+                let lamportsSent = 0;
+                let tokensSent = 0;
+                let tokenDecimals = 0;
+
+                let tokenProgramId = null;
+
+                for (const instruction of instructions) {
+                    if (instruction.programId.equals(SystemProgram.programId)) {
+                        // Handle SOL transfer
+                        if ((instruction.parsed.type === "transfer" || instruction.parsed.type === "transferChecked") && instruction.parsed.info.destination === accountPubkey) {
+                            lamportsSent += instruction.parsed.info.lamports;
+                        }
+                    } else if (instruction.programId.equals(TOKEN_PROGRAM_ID)) {
+                        // Handle token transfer
+                        if ((instruction.parsed.type === "transfer" || instruction.parsed.type === "transferChecked") && instruction.parsed.info.destination === accountPubkey) {
+                            tokensSent += Number(instruction.parsed.info.tokenAmount.amount);
+                            tokenDecimals = instruction.parsed.info.tokenAmount.decimals;
+                            tokenProgramId = instruction.programId;
+                        }
+                    }
                 }
-                const parsedData = parsedInstruction.parsed;
-                if (parsedData.info.destination !== Constants.kTreasuryWalletPubkey) {
-                    console.error("Not a deposit to the Treasury account.");
-                    return;
-                }
-                
-                const lamportsSent = parsedData.info.lamports;
-    
-                console.log(`Treasury balance change detected: +${lamportsSent / LAMPORTS_PER_SOL} SOL`);
-    
-                // Check if there is a deposit
-                if (lamportsSent > Constants.kSolMinLimit * LAMPORTS_PER_SOL) {
+
+                let transferInstructions = [];
+
+                if (lamportsSent > 0) {
+                    console.log(`Treasury balance change detected: +${lamportsSent / LAMPORTS_PER_SOL} SOL`);
                     const jackpotShareLamports = lamportsSent * Constants.kTreasuryShareOfJackpot;
                     const jackpotShare = jackpotShareLamports / LAMPORTS_PER_SOL;
-    
+
                     console.log(`Sending ${jackpotShare} SOL to the jackpot wallet...`);
-    
-                    const transferTransaction = new Transaction().add(
+                    transferInstructions.push(
                         SystemProgram.transfer({
                             fromPubkey: new PublicKey(Constants.kTreasuryWalletPubkey),
                             toPubkey: jackpotKeypair.publicKey,
-                            lamports: jackpotShareLamports
+                            lamports: Math.round(jackpotShareLamports)
                         })
                     );
-    
-                    const signature = await sendAndConfirmTransaction(connection, transferTransaction, [treasuryKeypair]);
+                }
+
+                if (tokensSent > 0) {
+                    console.log(`Treasury token balance change detected: +${tokensSent / Math.pow(10, tokenDecimals)} tokens`);
+                    const jackpotShareTokens = tokensSent * Constants.kTreasuryShareOfJackpot;
+
+                    console.log(`Sending ${jackpotShareTokens / Math.pow(10, tokenDecimals)} tokens to the jackpot wallet...`);
+
+                    const jackpotTokenAccount = await getOrCreateAssociatedTokenAccount(
+                        connection,
+                        treasuryKeypair,
+                        new PublicKey(Constants.kRewardTokenMintPubkey),
+                        jackpotKeypair.publicKey,
+                        true,
+                        "finalized",
+                        { commitment: "finalized" }, // Confirmation options
+                        tokenProgramId
+                    );
+
+                    // Add token transfer instructions to transaction
+                    transferInstructions.push(
+                      createTransferInstruction(
+                        new PublicKey(accountPubkey),
+                        jackpotTokenAccount.address,
+                        treasuryKeypair.publicKey,
+                        jackpotShareTokens
+                      ),
+                    );
+                }
+
+                if (transferInstructions.length > 0)
+                {
+                    const transferTx = new Transaction().add(...transferInstructions);
+                    const signature = await sendAndConfirmTransaction(connection, transferTx, [treasuryKeypair]);
                     const txUrl = `https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`;
                     console.log(`TX Sent. Signature: ${txUrl}`);
-                } else {
-                    console.log(`Min deposit not met. Ignoring...`);
                 }
             }
         } catch (error) {
@@ -461,8 +551,64 @@ async function handleTreasuryAutoDistribute() {
     });
 }
 
+async function checkTokenBalanceAndSwap() {
+    try {
+        // Determine the token program ID for the reward token mint
+        const mintAccountInfo = await connection.getAccountInfo(new PublicKey(Constants.kRewardTokenMintPubkey));
+        if (!mintAccountInfo) {
+            console.error("Failed to fetch mint account info for the reward token.");
+            return;
+        }
+    
+        const tokenProgramId = mintAccountInfo.owner;
+    
+        // Compute the associated token account for the reward token mint
+        const rewardTokenAccount = getAssociatedTokenAddressSync(
+            new PublicKey(Constants.kRewardTokenMintPubkey),
+            jackpotKeypair.publicKey,
+            true, // allow owner to be off-curve
+            tokenProgramId
+        );
+    
+        const info = await connection.getTokenAccountBalance(rewardTokenAccount);
+        if (info.value.uiAmount == null) {
+            console.error("No reward token balance found.");
+            return;
+        }
+    
+        const tokensToSwap = info.value.uiAmount;
+        if (tokensToSwap < Constants.kJackpotTokensToAccumulate) {
+            console.log(`Not enough reward tokens to swap. Current balance: ${tokensToSwap} tokens.`);
+            return;
+        }
+
+        console.log(`Swapping ${tokensToSwap} tokens for SOL...`);
+        const swapResult = await swapToken(
+            connection,
+            jackpotKeypair,
+            new PublicKey(Constants.kRewardTokenMintPubkey),
+            tokensToSwap * Math.pow(10, info.value.decimals),
+            "So11111111111111111111111111111111111111112",
+            Constants.kSwapSlippage
+        );
+    
+        // Handle the swap result
+        if (swapResult.success) {
+            console.log("Reward token swap successful.");
+        } else {
+            console.error("Reward token swap failed.");
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 async function handleJackpots() {
     try {
+        if (Constants.kRewardTokenMintPubkey.length !== 0) {
+            await checkTokenBalanceAndSwap();
+        }
+
         let accountBalance = await connection.getBalance(jackpotKeypair.publicKey);
         let currBalance = accountBalance / LAMPORTS_PER_SOL;
         // Always reserve some SOL for fees

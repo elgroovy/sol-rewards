@@ -21,6 +21,8 @@ export const Constants = {
     kJackpotWalletKeyFile : "~/sol-rewards/keys/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK.json",
     kJackpotWalletPubKey : "RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK",
 
+    kRewardTokenMintPubkey : "FtUEW73K6vEYHfbkfpdBZfWpxgQar2HipGdbutEhpump",//"C3DwDjT17gDvvCYC2nsdGHxDHVmQRdhKfpAdqQ29pump",
+
     kTokenDecimals: 6,
 
     // Reward distribution settings
@@ -35,9 +37,10 @@ export const Constants = {
     kSwapSlippage : 50,             // 0.5% slippage
 
     // Jackpot settings
-    kJackpotThreshold : 1.0,                    // 1.0 SOL
+    kJackpotThreshold : 0.2,                    // 0.2 SOL
+    kJackpotTokensToAccumulate: 1000,           // 1000 tokens
     kJackpotEligibilityMinHolding : 100_000,    // 100,000 tokens
-    kJackpotCheckInterval : 2,                  // 60 minutes
+    kJackpotCheckInterval : 30,                 // 30 minutes
     kTreasuryShareOfJackpot: 0.6,               // 60% of the treasury goes to the jackpot
     kOldHoldersShare : 0.2,                     // 20% of the jackpot goes to old holders
     kNewHoldersShare : 0.5,                     // 50% of the jackpot goes to new holders
