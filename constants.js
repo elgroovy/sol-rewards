@@ -39,7 +39,7 @@ export const Constants = {
 
     // Jackpot settings
     kJackpotThreshold : 0.2,                    // 0.2 SOL
-    kJackpotTokensToAccumulate: 1000,           // 1000 tokens
+    kJackpotTokensToAccumulate: 100,            // 100 tokens
     kJackpotEligibilityMinHolding : 100_000,    // 100,000 tokens
     kJackpotCheckInterval : 30,                 // 30 minutes
     kTreasuryShareOfJackpot: 0.6,               // 60% of the treasury goes to the jackpot
