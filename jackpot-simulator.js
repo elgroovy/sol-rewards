@@ -522,7 +522,7 @@ async function handleTreasuryAutoDistribute() {
                         new PublicKey(accountPubkey),
                         jackpotTokenAccount.address,
                         treasuryKeypair.publicKey,
-                        jackpotShareTokens
+                        Math.round(jackpotShareTokens)
                       ),
                     );
                 }
