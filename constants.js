@@ -44,6 +44,5 @@ export const Constants = {
     kJackpotCheckInterval : 30,                 // 30 minutes
     kTreasuryShareOfJackpot: 0.6,               // 60% of the treasury goes to the jackpot
     kOldHoldersShare : 0.2,                     // 20% of the jackpot goes to old holders
-    kNewHoldersShare : 0.5,                     // 50% of the jackpot goes to new holders
-    kJackpotTokenSwapSlippage : 200,             // 2.0% slippage
+    kNewHoldersShare : 0.5                      // 50% of the jackpot goes to new holders
 };

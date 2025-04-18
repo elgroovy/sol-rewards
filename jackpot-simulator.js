@@ -588,9 +588,9 @@ async function checkTokenBalanceAndSwap() {
             connection,
             jackpotKeypair,
             new PublicKey(Constants.kRewardTokenMintPubkey),
-            tokensToSwap * Math.pow(10, info.value.decimals),
+            Math.floor(tokensToSwap * Math.pow(10, info.value.decimals)),
             "So11111111111111111111111111111111111111112",
-            Constants.kJackpotTokenSwapSlippage
+            Constants.kSwapSlippage
         );
     
         // Handle the swap result
