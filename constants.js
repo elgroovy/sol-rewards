@@ -21,7 +21,7 @@ export const Constants = {
     kJackpotWalletKeyFile : "~/sol-rewards/keys/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK.json",
     kJackpotWalletPubKey : "RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK",
 
-    kRewardTokenMintPubkey : "7dGEYMPsAVxJY3qQJaCHwLPkCCx9SSE52H4k1wF617uE",
+    kRewardTokenMintPubkey : "9VxExA1iRPbuLLdSJ2rB3nyBxsyLReT4aqzZBMaBaY1p",
     kRewardTokenDecimals : 9,
 
     kTokenDecimals: 6,
