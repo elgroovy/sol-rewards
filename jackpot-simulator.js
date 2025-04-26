@@ -24,6 +24,7 @@ import crypto from 'crypto';
 import WebSocket from 'ws';
 
 let jackpotKeypair, treasuryKeypair = null;
+let jackpotCheckInterval = Constants.kJackpotCheckInterval;
 
 // Connection to the cluster
 const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
@@ -620,6 +621,9 @@ async function handleJackpots() {
         if (currBalance > Constants.kJackpotThreshold) {
             console.log(`Jackpot wallet balance: ${currBalance} SOL`);
 
+            // Reset the check interval
+            jackpotCheckInterval = Constants.kJackpotCheckInterval;
+
             // Grab the current holders snapshot
             const holderAddresses = await getCurrentHoldersSnapshot();
             if (holderAddresses.length > 0) {
@@ -632,13 +636,15 @@ async function handleJackpots() {
             }
         } else {
             console.log("Insufficient balance to draw the jackpot.");
-            await sendSimpleMessage(`Jackpot draw requires more SOL.\nCurrent balance: ${currBalance.toFixed(3)} SOL.\nCurrent threshold: ${Constants.kJackpotThreshold} SOL.\nI'll check again in 30 mins!`);
+            jackpotCheckInterval = Math.min(jackpotCheckInterval * 2, 8 * 60); // 8 hours max
+            const nextCheckDelayText = jackpotCheckInterval >= 60 ? `${Math.floor(jackpotCheckInterval / 60)} hour(s)` : `${jackpotCheckInterval} mins`; 
+            await sendSimpleMessage(`Jackpot draw requires more SOL.\nCurrent balance: ${currBalance.toFixed(3)} SOL.\nCurrent threshold: ${Constants.kJackpotThreshold} SOL.\nI'll check again in ${nextCheckDelayText}!`);
         }
     } catch (error) {
         console.error("Error handling jackpots:", error);
     } finally {
         // Retry after predefined time period in case of an error
-        setTimeout(handleJackpots, Constants.kJackpotCheckInterval * 60 * 1000);
+        setTimeout(handleJackpots, jackpotCheckInterval * 60 * 1000);
     }
 }
 
