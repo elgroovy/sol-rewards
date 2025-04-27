@@ -53,6 +53,7 @@ const notify = async (req, res) => {
     formattedMessage += `\n👉 [TX](${transactionUrl})`;
 
     // Add the transaction total
+    const tokenSymbol = wallets[0].tokenSymbol || 'Unknown Token';
     formattedMessage += ` Total: \`${txTotal.toFixed(6)}\` ${tokenSymbol} 👈\n\n`;
 
     const gifUrl = 'http://ipfs.io/ipfs/bafybeihi4r7z36d6rkxrd3ftyh4oxahhrmw43jhzmotb72itihgswnr46a';
