@@ -343,7 +343,8 @@ async function getCurrentHoldersSnapshot()
             Constants.kTreasuryWalletPubkey,
             jackpotKeypair.publicKey.toBase58(), // Jackpot wallet
             Constants.kBurnWalletPubkey,
-            Constants.kRaydiumVaultAuthority2 // Raydium pool
+            Constants.kRaydiumVaultAuthority2, // Raydium pool
+            Constants.kMeteoraTRTWSOLPool // Meteora pool
         ]);
 
         // Grab all addresses that meet the minimum holding requirement

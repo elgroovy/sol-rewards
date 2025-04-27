@@ -46,14 +46,14 @@ const notify = async (req, res) => {
         //const solScanUrl = `https://solscan.io/account/${walletAddress}`;
 
         // Add wallet details to the message
-        formattedMessage += `🔸 ${formattedWalletAddress} \`${amountEarned.toFixed(9)}\` ${tokenSymbol}\n`;
+        formattedMessage += `🔸 ${formattedWalletAddress}  \`${amountEarned.toFixed(6)}\` ${tokenSymbol}\n`;
     });
 
     // Add the transaction URL at the bottom
     formattedMessage += `\n👉 [TX](${transactionUrl})`;
 
     // Add the transaction total
-    formattedMessage += ` Total: \`${txTotal.toFixed(6)}\` SOL 👈\n\n`;
+    formattedMessage += ` Total: \`${txTotal.toFixed(6)}\` ${tokenSymbol} 👈\n\n`;
 
     const gifUrl = 'http://ipfs.io/ipfs/bafybeihi4r7z36d6rkxrd3ftyh4oxahhrmw43jhzmotb72itihgswnr46a';
 

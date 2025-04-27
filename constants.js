@@ -7,6 +7,7 @@ export const Constants = {
     kBackendUrl: "http://ec2-3-121-42-215.eu-central-1.compute.amazonaws.com:3000", // "http://localhost:3000"
 
     kRaydiumVaultAuthority2: "GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL",
+    kMeteoraTRTWSOLPool: "7rC3Uo1A7wLQDhxbAzpFxeLi7yHKYQh5odLbDNZjPYU",
 
     kTokenMintPubkey : "LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST",
     
@@ -23,12 +24,14 @@ export const Constants = {
 
     kRewardTokenMintPubkey : "9VxExA1iRPbuLLdSJ2rB3nyBxsyLReT4aqzZBMaBaY1p",
     kRewardTokenDecimals : 9,
+    kRewardTokenSymbol : "REVS",
 
     kTokenDecimals: 6,
 
     // Reward distribution settings
     kMinWithheldBalance : 0.1,      // Minimum witheld balance to withdraw for rewards
     kTokensToAccumulate : 10000,    // Start distributing rewards when this amount of tokens is accumulated
+    kRewardMinHolding : 100_000,    // 100,000 tokens for rewards eligibility
     kJackpotPercent : 30,           // 3% of the rewards go to the jackpot
     kTreasuryPercent : 20,          // 2% for treasury and the rest (5%) for holders
     kBurnPercent : 0,               // Burns are disabled for now
