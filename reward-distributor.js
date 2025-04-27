@@ -149,7 +149,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             
             walletsData.push({
                 walletAddress: account.owner.toBase58(),
-                amountEarned: Number(holderTokenShare / 10n ** BigInt(rewardTokenBalance.decimals)),
+                amountEarned: Number(holderTokenShare) / 10 ** rewardTokenBalance.decimals,
                 tokenSymbol: Constants.kRewardTokenSymbol
             });
         } else {
