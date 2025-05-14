@@ -1,7 +1,7 @@
 
 export const Constants = {
     kSolanaNetwork : "mainnet-beta",
-    kHeliusRPCEndpoint : "https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
+    kHeliusRPCEndpoint : "https://mainnet.helius-rpc.com/?api-key=9bddc7cc-e4cf-4933-b10c-12e6fedc9f10", //"https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
     kHeliusDevnetRPCEndpoint : "https://devnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
 
     kBackendUrl: "http://ec2-3-121-42-215.eu-central-1.compute.amazonaws.com:3000", // "http://localhost:3000"
