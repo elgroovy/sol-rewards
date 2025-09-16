@@ -1,6 +1,8 @@
 import React from "react";
 import useParticleField from "../hooks/useParticleField";
 import GlitchTitle from "./GlitchTitle";
+import Reveal from "./Reveal";
+import AssemblingCA from "./AssemblingCA";
 
 export default function Hero() {
   const canvasRef = useParticleField();
@@ -36,24 +38,40 @@ export default function Hero() {
           />
         </div>
 
-        <div className="mb-5 text-xs uppercase tracking-[0.35em] text-cyan-300/80">
-          Solana Token — $TRT
-        </div>
+        <Reveal delay={60}>
+          <div className="mb-5 text-xs uppercase tracking-[0.35em] text-cyan-300/80">
+            Solana Token — $TRT
+          </div>
+        </Reveal>
 
-        <GlitchTitle text="TEST REWARDS TOKEN" />
 
-        <p className="mt-5 text-lg md:text-xl text-white/80 leading-relaxed">
-          It started as a test, but it ended up being the best reward token on Solana.
-        </p>
+        <Reveal delay={140}>
+          <GlitchTitle text="TEST REWARDS TOKEN" />
+        </Reveal>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <a href="#buy" className="rounded-2xl px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 active:bg-fuchsia-700 transition font-semibold">
-            BUY ON JUPITER
-          </a>
-          <a href="#join" className="rounded-2xl px-6 py-3 border border-cyan-400 hover:border-cyan-300 bg-white/0 hover:bg-cyan-400/10 transition font-medium">
-            JOIN ✦
-          </a>
-        </div>
+        <Reveal delay={240}>
+          <p className="mt-5 text-lg md:text-xl text-white/80 leading-relaxed">
+            It started as a test, but it ended up being the best reward token on Solana.
+          </p>
+        </Reveal>
+
+        <Reveal delay={340}>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <a href="#buy" className="rounded-2xl px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 active:bg-fuchsia-700 transition font-semibold">
+              BUY ON JUPITER
+            </a>
+            <a href="#join" className="rounded-2xl px-6 py-3 border border-cyan-400 hover:border-cyan-300 bg-white/0 hover:bg-cyan-400/10 transition font-medium">
+              JOIN ✦
+            </a>
+          </div>
+        </Reveal>
+
+        {/* Contract Address assemble animation */}
+        <Reveal delay={340}>
+          <div className="mt-10">
+            <AssemblingCA value="LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST" />
+          </div>
+        </Reveal>
       </div>
     </section>
   );
