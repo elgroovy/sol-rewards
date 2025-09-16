@@ -10,9 +10,11 @@ import {
 
 import {
     getOrCreateAssociatedTokenAccount,
+    getAssociatedTokenAddressSync,
     getMint,
     unpackAccount,
     burnChecked,
+    createTransferCheckedInstruction,
     TOKEN_2022_PROGRAM_ID
 } from "@solana/spl-token";
 
@@ -25,8 +27,36 @@ import fetch from 'node-fetch';
 let ownerKeypair = null;
 let isRunning = false; // flag to track if reward distribution is running
 
-async function distributeSolToHolders(connection, totalLamportsToSend) {
-    console.log(`Sending ${totalLamportsToSend / LAMPORTS_PER_SOL} SOL to holders...`);
+
+async function getRewardTokenBalance(connection) {
+    // Determine the token program ID for the reward token mint
+    const mintAccountInfo = await connection.getAccountInfo(new PublicKey(Constants.kRewardTokenMintPubkey));
+    if (!mintAccountInfo) {
+        console.error("Failed to fetch mint account info for the reward token.");
+        return;
+    }
+
+    const tokenProgramId = mintAccountInfo.owner;
+
+    // Compute the associated token account for the reward token mint
+    const rewardTokenAccount = getAssociatedTokenAddressSync(
+        new PublicKey(Constants.kRewardTokenMintPubkey),
+        ownerKeypair.publicKey,
+        true, // allow owner to be off-curve
+        tokenProgramId
+    );
+
+    const info = await connection.getTokenAccountBalance(rewardTokenAccount);
+    if (info.value.uiAmount == null) {
+        console.error("No reward token balance found.");
+        return;
+    }
+
+    return {address: rewardTokenAccount, programId : tokenProgramId, balance: info.value.amount, decimals: info.value.decimals};
+}
+
+async function distributeToHolders(connection, totalLamportsToSend) {
+    console.log(`Got ${totalLamportsToSend / LAMPORTS_PER_SOL} SOL to distribute to holders...`);
 
     // Retrieve all Token Accounts for the Mint Account
     const allAccounts = await connection.getProgramAccounts(TOKEN_2022_PROGRAM_ID, {
@@ -46,9 +76,28 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
         /*Constants.kTreasuryWalletPubkey,*/
         ownerKeypair.publicKey.toBase58(),
         Constants.kBurnWalletPubkey,
-        Constants.kRaydiumVaultAuthority2
+        Constants.kRaydiumVaultAuthority2, // Raydium pool
+        Constants.kMeteoraTRTWSOLPool, // Meteora pool
     ]);
-    
+
+    // Handle swap if we are using the reward token
+    let rewardTokenBalance = null;
+    if (Constants.kRewardTokenMintPubkey.length > 0)
+    {
+        console.log(`Swapping ${totalLamportsToSend / LAMPORTS_PER_SOL} SOL for reward token with mint address ${Constants.kRewardTokenMintPubkey}...`);
+        const swapResult = await swapToken(connection, ownerKeypair, 'So11111111111111111111111111111111111111112', totalLamportsToSend,  Constants.kRewardTokenMintPubkey, Constants.kSwapSlippage);
+        if (!swapResult.success)
+        {
+            console.error('Unable to swap SOL to reward token!');
+        }
+
+        rewardTokenBalance = await getRewardTokenBalance(connection);
+        if (rewardTokenBalance.balance == 0) {
+            console.log("No token balance found for the reward token to distribute.");
+            return;
+        }
+    }
+
     // Fetch the total supply from the mint account
     const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), {commitment: "confirmed"}, TOKEN_2022_PROGRAM_ID);
     const totalSupply = mintAccount.supply;
@@ -56,7 +105,7 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
     const instructions = [];
     const walletsData = [];
 
-    // Prepare SOL transfer instructions for each holder
+    // Prepare transfer instructions for each holder
     for (const accountInfo of allAccounts) {
         const account = unpackAccount(
             accountInfo.pubkey,
@@ -64,34 +113,74 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
             TOKEN_2022_PROGRAM_ID
         );
         
-        if (excludedWallets.has(account.owner.toBase58()))
+        const tokenAmount = Number(account.amount) / Math.pow(10, Constants.kTokenDecimals);
+        if (excludedWallets.has(account.owner.toBase58()) || tokenAmount < Constants.kRewardMinHolding)
             continue;
 
-        const holderShare = (BigInt(account.amount) * BigInt(totalLamportsToSend)) / BigInt(totalSupply);
+        if (Constants.kRewardTokenMintPubkey.length > 0) {
 
-        // If SOL amount is too small, skip.
-        // We keep accumulating until we have enough to distribute.
-        if (holderShare < BigInt(Constants.kSolMinLimit * LAMPORTS_PER_SOL)) {
-            continue;
+            // Get the associated token account for the holder
+            const holderTokenAccount = await getOrCreateAssociatedTokenAccount(
+                connection,
+                ownerKeypair,
+                new PublicKey(Constants.kRewardTokenMintPubkey),
+                account.owner,
+                true,
+                "finalized",
+                { commitment: "finalized" }, // Confirmation options
+                rewardTokenBalance.programId
+            );
+
+            const holderTokenShare = (BigInt(account.amount) * BigInt(rewardTokenBalance.balance)) / BigInt(totalSupply);
+
+            // Transfer reward tokens
+            instructions.push(
+                createTransferCheckedInstruction(
+                    rewardTokenBalance.address,
+                    new PublicKey(Constants.kRewardTokenMintPubkey),
+                    holderTokenAccount.address,
+                    ownerKeypair.publicKey,
+                    holderTokenShare,
+                    rewardTokenBalance.decimals,
+                    [],
+                    rewardTokenBalance.programId
+                ),
+            );
+            
+            walletsData.push({
+                walletAddress: account.owner.toBase58(),
+                amountEarned: Number(holderTokenShare) / 10 ** rewardTokenBalance.decimals,
+                tokenSymbol: Constants.kRewardTokenSymbol
+            });
+        } else {
+            const holderShare = (BigInt(account.amount) * BigInt(totalLamportsToSend)) / BigInt(totalSupply);
+
+            // If SOL amount is too small, skip.
+            // We keep accumulating until we have enough to distribute.
+            if (holderShare < BigInt(Constants.kSolMinLimit * LAMPORTS_PER_SOL)) {
+                continue;
+            }
+
+            // Transfer SOL
+            instructions.push(
+                SystemProgram.transfer({
+                    fromPubkey: ownerKeypair.publicKey,
+                    toPubkey: account.owner,
+                    lamports: holderShare
+                })
+            );
+
+            walletsData.push({
+                walletAddress: account.owner.toBase58(),
+                amountEarned: Number(holderShare) / LAMPORTS_PER_SOL,
+                tokenSymbol: "SOL"
+            });
         }
-
-        instructions.push(
-            SystemProgram.transfer({
-                fromPubkey: ownerKeypair.publicKey,
-                toPubkey: account.owner,
-                lamports: holderShare
-            })
-        );
-
-        walletsData.push({
-            walletAddress: account.owner.toBase58(),
-            solEarned: Number(holderShare) / LAMPORTS_PER_SOL
-        });
     }
 
     let transactionUrl = "";
 
-    // Distribute SOL in batches to make sure we don't hit the Solana transaction size limit of 1232 bytes 
+    // Distribute in batches to make sure we don't hit the Solana transaction size limit of 1232 bytes 
     for (let i = 0; i < instructions.length; i += Constants.kBatchSize) {
         const transaction = new Transaction().add(...instructions.slice(i, i + Constants.kBatchSize));
 
@@ -109,7 +198,7 @@ async function distributeSolToHolders(connection, totalLamportsToSend) {
         await notifyTelegramBot("rewards", walletsData.slice(i, i + Constants.kBatchSize), transactionUrl);
     }
 
-    console.log(`Submitted ${instructions.length} TXs (SOL transfer).`);
+    console.log(`Submitted ${instructions.length} transfer TXs).`);
 }
 
 async function notifyTelegramBot(messageType, walletsData, transactionUrl)
@@ -202,7 +291,7 @@ async function distributeRewards() {
             console.log(`Burn completed. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
         }
 
-        // Swap remaining tokens for SOL
+        // Swap remaining tokens for SOL (or the reward token if it's set)
         const remainingTokenAmount = tokenBalance - burnAmount;
         const tokensToSwap = remainingTokenAmount / Math.pow(10, tokenAmount.value.decimals)
         console.log(`Swapping ${tokensToSwap} tokens for SOL...`);
@@ -253,7 +342,7 @@ async function distributeRewards() {
             console.log(`Sent to treasury. Signature: https://solscan.io/tx/${treasurySig}?cluster=${Constants.kSolanaNetwork}`);
 
             // Send the rest to the holders
-            await distributeSolToHolders(connection, holdersLamports);
+            await distributeToHolders(connection, holdersLamports);
         }
     } catch (error) {
         console.error("An error occurred during the reward distribution process:", error);

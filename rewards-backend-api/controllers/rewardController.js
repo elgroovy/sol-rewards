@@ -14,7 +14,8 @@ curl -X POST http://localhost:3000/api/rewards/notify \
     "wallets": [
         {
             "walletAddress": "3fA1bC2dE4FgH5IjK6LmN7OpQ8RsT9UvWxYzA1B2",
-            "solEarned": 0.000123456
+            "amountEarned": 0.000123456,
+            "tokenSymbol": "SOL"
         }
     ],
     "transactionUrl": "https://solscan.io/tx/fake_transaction_url"
@@ -34,9 +35,9 @@ const notify = async (req, res) => {
     let txTotal = 0.0;
 
     wallets.forEach((wallet, index) => {
-        const { walletAddress, solEarned } = wallet;
+        const { walletAddress, amountEarned, tokenSymbol } = wallet;
 
-        txTotal += solEarned;
+        txTotal += amountEarned;
 
         // Format wallet address with ellipsis
         const formattedWalletAddress = `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
@@ -45,15 +46,15 @@ const notify = async (req, res) => {
         //const solScanUrl = `https://solscan.io/account/${walletAddress}`;
 
         // Add wallet details to the message
-        //formattedMessage += `🔸 [${formattedWalletAddress}](${solScanUrl}) \`${solEarned.toFixed(9)}\` SOL\n`;
-        formattedMessage += `🔸 ${formattedWalletAddress} \`${solEarned.toFixed(9)}\` SOL\n`;
+        formattedMessage += `🔸 ${formattedWalletAddress}  \`${amountEarned.toFixed(6)}\` ${tokenSymbol}\n`;
     });
 
     // Add the transaction URL at the bottom
     formattedMessage += `\n👉 [TX](${transactionUrl})`;
 
     // Add the transaction total
-    formattedMessage += ` Total: \`${txTotal.toFixed(6)}\` SOL 👈\n\n`;
+    const tokenSymbol = wallets[0].tokenSymbol || 'Unknown Token';
+    formattedMessage += ` Total: \`${txTotal.toFixed(6)}\` ${tokenSymbol} 👈\n\n`;
 
     const gifUrl = 'http://ipfs.io/ipfs/bafybeihi4r7z36d6rkxrd3ftyh4oxahhrmw43jhzmotb72itihgswnr46a';
 

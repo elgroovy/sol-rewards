@@ -26,7 +26,7 @@ const csvFilePath = '/home/elisa/sol-rewards/mint/airdrop.csv';
 let totalContribution = 0;
 let contributions = [];
 
-const connection = new Connection(clusterApiUrl(TokenConfig.kSolanaNetwork), "confirmed");
+const connection = new Connection(Constants.kHeliusRPCEndpoint, "confirmed");
 const mintPubkey = new PublicKey(Constants.kTokenMintPubkey);
 
 // Load the owner wallet keypair
