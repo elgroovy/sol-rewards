@@ -13,30 +13,32 @@ export default function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-5xl px-6 text-center">
-        {/* Top animation (centered, 320x320, soft edge blend) */}
-        <div className="flex justify-center mb-4">
-          <video
-            src="/smiley_face_anim.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            width={320}
-            height={320}
-            className="w-[320px] h-[320px]"
-            style={{
-              objectFit: "cover",
-              WebkitMaskImage: "radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)",
-              WebkitMaskRepeat: "no-repeat",
-              WebkitMaskPosition: "center",
-              WebkitMaskSize: "cover",
-              maskImage: "radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)",
-              maskRepeat: "no-repeat",
-              maskPosition: "center",
-              maskSize: "cover",
-            }}
-          />
-        </div>
+        <Reveal delay={340}>
+          {/* Top animation (centered, 320x320, soft edge blend) */}
+          <div className="flex justify-center mb-4">
+            <video
+              src="/smiley_face_anim.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              width={320}
+              height={320}
+              className="w-[320px] h-[320px]"
+              style={{
+                objectFit: "cover",
+                WebkitMaskImage: "radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)",
+                WebkitMaskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                WebkitMaskSize: "cover",
+                maskImage: "radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)",
+                maskRepeat: "no-repeat",
+                maskPosition: "center",
+                maskSize: "cover",
+              }}
+            />
+          </div>
+        </Reveal>
 
         <Reveal delay={60}>
           <div className="mb-5 text-xs uppercase tracking-[0.35em] text-cyan-300/80">
@@ -57,7 +59,10 @@ export default function Hero() {
 
         <Reveal delay={340}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <a href="#buy" className="rounded-2xl px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 active:bg-fuchsia-700 transition font-semibold">
+            <a href="#buy" className="rounded-2xl px-6 py-3 border border-fuchsia-400 hover:border-fuchsia-300
+              bg-transparent hover:bg-fuchsia-500/20
+              font-semibold transition"
+            >
               BUY ON JUPITER
             </a>
             <a href="#join" className="rounded-2xl px-6 py-3 border border-cyan-400 hover:border-cyan-300 bg-white/0 hover:bg-cyan-400/10 transition font-medium">
