@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import CrtCycler from "./CrtCycler";
+import RewardsCalculatorModal from "./RewardsCalculatorModal";
 
 export default function Fees() {
   const boxes = [
@@ -8,34 +9,49 @@ export default function Fees() {
     { p: "2%", l: "Treasury", s: "Growth & project funding" },
     { p: "1%", l: "Lottery", s: "Jackpot prizes for lucky holders" },
   ];
+
+  const [calcOpen, setCalcOpen] = useState(false);
+
   return (
-    <section id="fees" className="pt-20 pb-10 relative">
+    <section id="fees" className="py-20 relative">
       <div className="mx-auto max-w-6xl px-6 text-center">
         <h2 className="text-3xl md:text-5xl font-extrabold tracking-wide">FEE STRUCTURE</h2>
+
         <div className="mt-10">
-          <div className="relative w-[600px] mx-auto">
-            {/* Screen area */}
+          {/* TV stays centered; allow content to spill on the right for the button */}
+          <div className="relative w-[600px] mx-auto overflow-visible">
+            {/* Screen area inside the frame */}
             <div
               className="absolute"
-              style={{
-                top: "10%",      // adjust until it matches your TV frame
-                left: "10%",     // adjust until it matches your TV frame
-                width: "65%",    // the screen width inside bezel
-                height: "55%"
-              }}
+              style={{ top: "10%", left: "10%", width: "65%", height: "55%" }}
             >
               <CrtCycler items={boxes} />
             </div>
 
-            {/* TV frame overlay */}
+            {/* TV frame (non-interactive, sits below the button) */}
             <img
               src="/crt_tv_frame.png"
               alt="CRT TV frame"
               className="relative z-10 pointer-events-none w-full h-auto"
             />
+
+            {/* ONE button, pinned to the TV’s right edge */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 z-20"
+              style={{ left: "calc(100% + 24px)" }} // 24px gap from TV
+            >
+              <button
+                onClick={() => setCalcOpen(true)}
+                className="rounded-2xl px-6 py-3 border border-white/20 bg-white/5 hover:bg-white/10 transition font-semibold shadow-[0_6px_18px_rgba(0,0,0,0.35)]"
+              >
+                Calculate Rewards
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      <RewardsCalculatorModal open={calcOpen} onClose={() => setCalcOpen(false)} />
     </section>
   );
 }

@@ -53,7 +53,7 @@ export default function Hero() {
 
         <Reveal delay={240}>
           <p className="mt-5 text-lg md:text-xl text-white/80 leading-relaxed">
-            It started as a test, but it ended up being the best reward token on Solana.
+            It started as a test, but it ended up being the best reward token on Solana
           </p>
         </Reveal>
 
