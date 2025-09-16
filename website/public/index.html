@@ -18,6 +18,16 @@
     html, body { height: 100%; }
     body { margin: 0; background: #070B16; color: #fff; }
     canvas { display: block; }
+
+    .egg-shake {
+      animation: egg-shake 0.9s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes egg-shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0) rotate(-0.5deg); }
+      20%, 80% { transform: translate3d(2px, 0, 0) rotate(0.8deg); }
+      30%, 50%, 70% { transform: translate3d(-3px, 0, 0) rotate(-1.5deg); }
+      40%, 60% { transform: translate3d(3px, 0, 0) rotate(1.5deg); }
+    }
   </style>
 </head>
 <body style="margin:0;background:#070B16;color:#fff;">

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import CrtCycler from "./CrtCycler";
+import PhysicsTitle from "./PhysicsTitle";
 import RewardsCalculatorModal from "./RewardsCalculatorModal";
 
 export default function Fees() {
@@ -15,11 +16,18 @@ export default function Fees() {
   return (
     <section id="fees" className="py-20 relative">
       <div className="mx-auto max-w-6xl px-6 text-center">
-        <h2 className="text-3xl md:text-5xl font-extrabold tracking-wide">FEE STRUCTURE</h2>
+        <div className="text-center mb-8">
+          <PhysicsTitle
+            text="FEE STRUCTURE"
+            tvSelector="#tv-case"
+            onUnlock={() => console.log("TRT unlocked")}
+            className="text-5xl md:text-6xl font-extrabold tracking-[.08em]"
+          />
+        </div>
 
         <div className="mt-10">
           {/* TV stays centered; allow content to spill on the right for the button */}
-          <div className="relative w-[600px] mx-auto overflow-visible">
+          <div id="tv-case" className="relative w-[600px] mx-auto overflow-visible">
             {/* Screen area inside the frame */}
             <div
               className="absolute"
