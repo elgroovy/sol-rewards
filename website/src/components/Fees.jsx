@@ -45,7 +45,7 @@ export default function Fees() {
 
             {/* ONE button, pinned to the TV’s right edge */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 z-20"
+              className="absolute top-[10%] z-20"
               style={{ left: "calc(100% + 24px)" }} // 24px gap from TV
             >
               <button
