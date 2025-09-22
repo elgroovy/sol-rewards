@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from "react";
  * - Use `delay` to stagger siblings.
  * - Use `as` to change wrapper element.
  */
-export default function Reveal({ as: Tag = "div", children, className = "", delay = 0, once = true }) {
+export default function Reveal({ as: Tag = "div", children, className = "", delay = 0, once = true, direction = "up" }) {
   const ref = useRef(null);
   const [inView, setInView] = useState(false);
 
@@ -38,7 +38,15 @@ export default function Reveal({ as: Tag = "div", children, className = "", dela
     <Tag
       ref={ref}
       className={`transition-all duration-[800ms] ease-out will-change-[opacity,transform] ${
-        inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+        inView
+          ? "opacity-100 translate-y-0 translate-x-0"
+          : `opacity-0 ${
+              direction === "left"
+                ? "-translate-x-full"
+                : direction === "right"
+                ? "translate-x-full"
+                : "translate-y-6"
+            }`
       } ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >

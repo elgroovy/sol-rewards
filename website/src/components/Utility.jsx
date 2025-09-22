@@ -1,4 +1,5 @@
 import React from "react";
+import Reveal from "./Reveal";
 
 export default function Utility() {
   const items = [
@@ -9,16 +10,20 @@ export default function Utility() {
   return (
     <section id="utility" className="py-20">
       <div className="mx-auto max-w-6xl px-6">
-        <h2 className="text-2xl md:text-4xl font-bold mb-8">
-          Hold & Win <span className="text-cyan-300">Rewards</span>
-        </h2>
+        <Reveal direction="left" delay={0}>
+          <h2 className="text-2xl md:text-4xl font-bold mb-8">
+            Hold & Win <span className="text-cyan-300">Rewards</span>
+          </h2>
+        </Reveal>
         <div className="grid md:grid-cols-3 gap-6">
           {items.map((c, i) => (
-            <div
+            <Reveal
               key={i}
               className="group relative overflow-hidden rounded-2xl border border-white/10
-                         bg-white/5 backdrop-blur-sm p-6 transition
-                         hover:border-white/20 hover:shadow-2xl hover:-translate-y-0.5"
+                          bg-white/5 backdrop-blur-sm p-6 transition
+                          hover:border-white/20 hover:shadow-2xl hover:-translate-y-0.5"
+              direction={i === 0 ? "left" : i === 1 ? "up" : "right"}
+              delay={i * 100}
             >
               {/* metallic sweep (specular highlight) */}
               <div
@@ -34,7 +39,7 @@ export default function Utility() {
                            opacity-0 group-hover:opacity-100 transition-opacity duration-500"
               />              <div className="text-xl font-semibold mb-2">{c.t}</div>
               <div className="text-white/75">{c.d}</div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
