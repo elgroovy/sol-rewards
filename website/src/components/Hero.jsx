@@ -59,14 +59,22 @@ export default function Hero() {
 
         <Reveal delay={340}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <a href="#buy" className="rounded-2xl px-6 py-3 border border-fuchsia-400 hover:border-fuchsia-300
+            <a href="https://jup.ag/swap?sell=So11111111111111111111111111111111111111112&buy=LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST" className="rounded-2xl px-6 py-3 border border-white-400 hover:border-white-300
               bg-transparent hover:bg-fuchsia-500/20
               font-semibold transition"
             >
+              <img src="/jupiter-logo.webp" alt="Jupiter Logo" className="inline-block mr-2 h-5 align-middle" />
               BUY ON JUPITER
             </a>
-            <a href="#join" className="rounded-2xl px-6 py-3 border border-cyan-400 hover:border-cyan-300 bg-white/0 hover:bg-cyan-400/10 transition font-medium">
-              JOIN ✦
+            <a href="https://dexscreener.com/solana/LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST" className="rounded-2xl px-6 py-3 border border-white-400 hover:border-white-300 bg-transparent hover:bg-green-500/20 font-semibold transition">
+              <img src="https://dexscreener.com/favicon.ico" alt="DexScreener Logo" className="inline-block mr-2 h-5 align-middle" />
+              CHART
+            </a>
+            <a href="https://x.com/testrewardtoken" className="rounded-2xl px-6 py-3 border border-white-400 hover:border-white-300 bg-white/0 hover:bg-cyan-400/10 transition font-medium">
+              JOIN <img src="/x-logo.png" alt="X Logo" className="inline-block ml-2 h-4 align-middle filter invert" />
+            </a>
+            <a href="https://t.me/TRT_token" className="rounded-2xl px-4 py-2 border border-white-400 hover:border-white-300 bg-white/0 hover:bg-cyan-400/10 transition flex items-center justify-center">
+              <img src="/tg-logo.png" alt="Telegram Logo" className="h-8 w-8" />
             </a>
           </div>
         </Reveal>
