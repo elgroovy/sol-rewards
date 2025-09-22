@@ -8,7 +8,7 @@ export default function Hero() {
   const canvasRef = useParticleField();
   return (
     <section id="hero" className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
-      <div className="absolute inset-0 z-0 pointer-events-none">
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <canvas ref={canvasRef} />
       </div>
 

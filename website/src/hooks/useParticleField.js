@@ -7,6 +7,7 @@ import { useEffect, useRef } from "react";
  */
 export default function useParticleField() {
   const canvasRef = useRef(null);
+  const scrollFactorRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -19,6 +20,16 @@ export default function useParticleField() {
     canvas.style.left = "0";
     canvas.style.width = "100%";
     canvas.style.height = "100%";
+
+    // Scroll factor for color desaturation
+    const updateScrollFactor = () => {
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollY = window.scrollY;
+      const factor = docHeight > 0 ? scrollY / docHeight : 0;
+      scrollFactorRef.current = Math.min(Math.max(factor, 0), 1);
+    };
+    window.addEventListener("scroll", updateScrollFactor);
+    updateScrollFactor(); // initialize
 
     // DPR & sizing
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -94,7 +105,8 @@ export default function useParticleField() {
 
         ctx.beginPath();
         const hue = 190 + p.c * 160;
-        ctx.fillStyle = `hsla(${hue},100%,65%,0.9)`;
+        const sat = (1 - scrollFactorRef.current) * 100;
+        ctx.fillStyle = `hsla(${hue},${sat}%,65%,0.9)`;
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
       });
@@ -155,6 +167,7 @@ export default function useParticleField() {
     const onResize = () => setSize();
     window.addEventListener("resize", onResize);
     return () => {
+      window.removeEventListener("scroll", updateScrollFactor);
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(raf);
       clearTimeout(nextMeteor);
