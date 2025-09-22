@@ -11,7 +11,7 @@ export default function AssemblingCA({
   fontSize = 18,              // px
   gap = 0,                    // px between letters
   duration = 900,             // ms per letter
-  stagger = 16,               // ms between letters
+  stagger = 25,               // ms between letters
   paddingX = 20,              // pill padding left/right
   paddingY = 12,              // pill padding top/bottom
 }) {
@@ -21,7 +21,9 @@ export default function AssemblingCA({
   const [go, setGo] = useState(false);
   const [done, setDone] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [rotateActive, setRotateActive] = useState(false);
   const toastTimerRef = useRef(null);
+  const rotateTimerRef = useRef(null);
 
   const copyToClipboard = async () => {
     try {
@@ -42,11 +44,17 @@ export default function AssemblingCA({
       setCopied(true);
       clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => setCopied(false), 1600);
+      setRotateActive(true);
+      clearTimeout(rotateTimerRef.current);
+      rotateTimerRef.current = setTimeout(() => setRotateActive(false), 1000); // Animation duration
     } catch (_) {
       // if copy fails, still show a small toast to indicate action
       setCopied(true);
       clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => setCopied(false), 1600);
+      setRotateActive(true);
+      clearTimeout(rotateTimerRef.current);
+      rotateTimerRef.current = setTimeout(() => setRotateActive(false), 1000); // Animation duration
     }
   };
 
@@ -183,7 +191,12 @@ export default function AssemblingCA({
             <span
               key={`m-${i}`}
               ref={(el) => (measureRef.current[i] = el)}
-              style={{ marginRight: i < chars.length - 1 ? gap : 0 }}
+              className={rotateActive ? "rotate-letter" : ""}
+              style={{
+                marginRight: i < chars.length - 1 ? gap : 0,
+                animationDelay: rotateActive ? `${i * 0.005}s` : "0s",
+                display: "inline-block", // Ensure transform applies
+              }}
             >
               {ch}
             </span>
@@ -213,6 +226,16 @@ export default function AssemblingCA({
             </span>
           ))}
         </div>
+
+        <style>{`
+          @keyframes rotate-360 {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          .rotate-letter {
+            animation: rotate-360 0.5s ease-out forwards;
+          }
+        `}</style>
       </div>
     </div>
   );
