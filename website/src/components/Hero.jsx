@@ -7,7 +7,7 @@ import AssemblingCA from "./AssemblingCA";
 export default function Hero() {
   const canvasRef = useParticleField();
   return (
-    <section id="hero" className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
+    <section id="hero" className="relative min-h-[auto] flex items-center justify-center overflow-hidden pb-10">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <canvas ref={canvasRef} />
       </div>
