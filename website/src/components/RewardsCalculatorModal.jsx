@@ -220,6 +220,9 @@ export default function RewardsCalculatorModal({
                 />
                 <span className="text-xs text-white/50">USD</span>
               </div>
+              <p className="mt-1 text-red-400 text-xs pl-2">
+                leave empty to use actual volume
+              </p>
 
 
               {/* meta */}
