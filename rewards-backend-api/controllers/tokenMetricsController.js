@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 
 const DEXSCREENER_API_URL = "https://api.dexscreener.com/latest/dex/pairs/solana/2hDES5rJLmoANB9HjSKffFx62pCiqRfi5Q86cPTCkJeF";
 
-const getTokenData = async (req, res) => {
+const getTokenMetrics = async (req, res) => {
     try {
         const connection = new Connection(Constants.kHeliusRPCEndpoint);
         const tokenMintPublicKey = new PublicKey(Constants.kTokenMintPubkey);
@@ -52,5 +52,5 @@ const getTokenData = async (req, res) => {
 };
 
 module.exports = {
-    getTokenData
+    getTokenMetrics
 };

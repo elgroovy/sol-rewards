@@ -8,6 +8,6 @@ const earningsController = require('../controllers/earningsController');
  * @desc Get total earnings for a given wallet address
  * @access Public
  */
-router.get('/:walletAddress', earningsController.getEarningsByWalletAddress);
+router.get('/', earningsController.getEarningsByWalletAddress);
 
 module.exports = router;

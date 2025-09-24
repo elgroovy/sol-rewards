@@ -3,7 +3,7 @@ const cors = require('cors');
 
 const rewardRoutes = require('./routes/rewardRoutes');
 const jackpotRoutes = require('./routes/jackpotRoutes');
-const tokenDataRoutes = require('./routes/tokenDataRoutes');
+const tokenMetricsRoutes = require('./routes/tokenMetricsRoutes');
 const earningsRoutes = require('./routes/earningsRoutes');
 
 const app = express();
@@ -16,7 +16,7 @@ app.use(cors());
 // Routes
 app.use('/api/rewards', rewardRoutes);
 app.use('/api/jackpots', jackpotRoutes);
-app.use('/api/token-data', tokenDataRoutes);
+app.use('/api/metrics', tokenMetricsRoutes);
 app.use('/api/earnings', earningsRoutes);
 
 
