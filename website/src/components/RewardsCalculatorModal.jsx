@@ -14,6 +14,9 @@ export default function RewardsCalculatorModal({
   const [liveMetrics, setLiveMetrics] = useState(null);
   const [status, setStatus] = useState("idle"); // idle | loading | ok | error
   const [simulatedVolume, setSimulatedVolume] = useState("");
+  const [activeTab, setActiveTab] = useState("calculator"); // "calculator" or "my-earnings"
+  const [walletAddress, setWalletAddress] = useState("");
+  const [earnings, setEarnings] = useState(null);
 
   const metrics = useMemo(() => {
     return liveMetrics;
@@ -103,6 +106,28 @@ export default function RewardsCalculatorModal({
     }
   };
 
+  const fetchEarnings = async () => {
+    if (!walletAddress) return;
+    try {
+      setStatus("loading"); // Use global status for now, could be specific status for earnings later
+      const res = await fetch(apiBase + `/api/earnings/${walletAddress}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      setEarnings(json.totalEarned);
+      // Assuming the backend returns lastUpdatedISO for earnings too
+      setLiveMetrics((prevMetrics) => ({
+        ...prevMetrics,
+        lastUpdatedISO: json.lastUpdated,
+      }));
+      setStatus("ok");
+    } catch (e) {
+      console.error("Error fetching earnings:", e);
+      setStatus("error");
+      setEarnings(null);
+    }
+  };
+
+
   useEffect(() => {
     fetchLive();
   }, []);
@@ -135,148 +160,220 @@ export default function RewardsCalculatorModal({
             ✕
           </button>
 
-          {/* Title */}
-          <h3 className="text-xl md:text-2xl font-bold tracking-wide mb-6">Rewards Calculator</h3>
+          <div className="mb-6 flex gap-3 text-xl md:text-2xl font-bold tracking-wide">
+            <button
+              type="button"
+              onClick={() => setActiveTab("calculator")}
+              className={`pb-2 transition ${
+                activeTab === "calculator"
+                  ? "text-white"
+                  : "text-white/40 hover:text-white/70"
+              }`}
+            >
+              Rewards Calculator
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("my-earnings")}
+              className={`pb-2 transition ${
+                activeTab === "my-earnings"
+                  ? "text-white"
+                  : "text-white/40 hover:text-white/70"
+              }`}
+            >
+              My Earnings
+            </button>
+          </div>
 
-          {/* Content grid */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* LEFT: inputs + meta */}
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:p-5">
-              <label className="block text-sm text-white/70 mb-2">
-                Your TRT Holdings{" "}
-                {data?.userHoldings > 0 && metrics?.circulatingSupply > 0 && (
-                  <span className="text-emerald-400">
-                    ({(data.userHoldings / metrics.circulatingSupply * 100).toFixed(4)}%)
-                  </span>
-                )}
-              </label>
-              <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9,.]*"
-                  value={formatNumberWithCommas(holdings)}
-                  onChange={(e) => {
-                    const inputValue = e.target.value;
-                    const cleanedValue = inputValue.replace(/[^0-9.]/g, '');
-                    const finalValue = cleanedValue.split('.').length > 2 ? `${cleanedValue.split('.')[0]}.${cleanedValue.split('.').slice(1).join('')}` : cleanedValue;
-                    
-                    // Limit holdings to current circulating supply
-                    const numericValue = parseHoldings(finalValue);
-                    if (metrics?.circulatingSupply && numericValue > metrics.circulatingSupply) {
-                      setHoldings(String(metrics.circulatingSupply));
-                    } else {
-                      setHoldings(finalValue);
-                    }
-                  }}
-                  placeholder="e.g. 1,000,000"
-                  className="w-full bg-transparent outline-none placeholder:text-white/30"
-                />
-                <span className="text-xs text-white/50">TRT</span>
-              </div>
-
-              {/* quick picks */}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  ["100k", "100000"],
-                  ["1M", "1000000"],
-                  ["10M", "10000000"],
-                  ["Max", String(metrics?.circulatingSupply ?? 0)],
-                ].map(([label, val]) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => {
-                        const numericVal = parseHoldings(val);
-                        if (metrics?.circulatingSupply && numericVal > metrics.circulatingSupply) {
-                            setHoldings(String(metrics.circulatingSupply));
+          {activeTab === "calculator" && (
+            <>
+              {/* Content grid */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* LEFT: inputs + meta */}
+                <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:p-5">
+                  <label className="block text-sm text-white/70 mb-2">
+                    Your TRT Holdings{" "}
+                    {data?.userHoldings > 0 && metrics?.circulatingSupply > 0 && (
+                      <span className="text-emerald-400">
+                        ({(data.userHoldings / metrics.circulatingSupply * 100).toFixed(4)}%)
+                      </span>
+                    )}
+                  </label>
+                  <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9,.]*"
+                      value={formatNumberWithCommas(holdings)}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+                        const cleanedValue = inputValue.replace(/[^0-9.]/g, '');
+                        const finalValue = cleanedValue.split('.').length > 2 ? `${cleanedValue.split('.')[0]}.${cleanedValue.split('.').slice(1).join('')}` : cleanedValue;
+                        
+                        // Limit holdings to current circulating supply
+                        const numericValue = parseHoldings(finalValue);
+                        if (metrics?.circulatingSupply && numericValue > metrics.circulatingSupply) {
+                          setHoldings(String(metrics.circulatingSupply));
                         } else {
-                            setHoldings(val);
+                          setHoldings(finalValue);
                         }
-                    }}
-                    className="rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10 transition"
-                  >
-                    {label}
-                  </button>
-                ))}
+                      }}
+                      placeholder="e.g. 1,000,000"
+                      className="w-full bg-transparent outline-none placeholder:text-white/30"
+                    />
+                    <span className="text-xs text-white/50">TRT</span>
+                  </div>
+
+                  {/* quick picks */}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {[
+                      ["100k", "100000"],
+                      ["1M", "1000000"],
+                      ["10M", "10000000"],
+                      ["Max", String(metrics?.circulatingSupply ?? 0)],
+                    ].map(([label, val]) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => {
+                            const numericVal = parseHoldings(val);
+                            if (metrics?.circulatingSupply && numericVal > metrics.circulatingSupply) {
+                                setHoldings(String(metrics.circulatingSupply));
+                            } else {
+                                setHoldings(val);
+                            }
+                        }}
+                        className="rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10 transition"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Volume Input */}
+                  <label className="block text-sm text-white/70 mt-5 mb-2">Simulated Volume</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9,.]*"
+                      value={formatNumberWithCommas(simulatedVolume)}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+                        const cleanedValue = inputValue.replace(/[^0-9.]/g, '');
+                        const finalValue = cleanedValue.split('.').length > 2 ? `${cleanedValue.split('.')[0]}.${cleanedValue.split('.').slice(1).join('')}` : cleanedValue;
+                        setSimulatedVolume(finalValue);
+                      }}
+                      placeholder="e.g. 500,000"
+                      className="w-full bg-transparent outline-none placeholder:text-white/30"
+                    />
+                    <span className="text-xs text-white/50">USD</span>
+                  </div>
+                  <p className="mt-1 text-red-400 text-xs pl-2">
+                    leave empty to use actual volume
+                  </p>
+
+
+                  {/* meta */}
+                  <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <Meta label="24H VOLUME" value={fmtUSD.format(data?.volume ?? 0)} />
+                    <Meta label="HOLDERS FEE" value={`${(metrics?.rewardsFeeBps / 100)?.toFixed(2) ?? 0}%`} />
+                    <Meta label="TOTAL SUPPLY" value={fmtInt.format(data?.supply ?? 0)} />
+                    <Meta
+                      label="Last updated"
+                      value={
+                        metrics?.lastUpdatedISO
+                          ? new Date(metrics.lastUpdatedISO).toLocaleString()
+                          : "N/A"
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* RIGHT: neon result cards */}
+                <div className="grid gap-4">
+                  <NeonCard title="DAILY EARNINGS" value={fmtUSD.format(data?.daily ?? 0)} />
+                  <NeonCard title="MONTHLY EARNINGS" value={fmtUSD.format(data?.monthly ?? 0)} />
+                  <NeonCard title="YEARLY EARNINGS" value={fmtUSD.format(data?.yearly ?? 0)} />
+                </div>
               </div>
 
-              {/* Volume Input */}
-              <label className="block text-sm text-white/70 mt-5 mb-2">Simulated Volume</label>
+              {/* bottom actions */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={fetchLive}
+                  disabled={status === "loading"}
+                  className={`rounded-2xl px-5 py-3 border transition font-semibold
+                    ${status === "ok"
+                      ? "border-emerald-400/40 bg-emerald-600/20 cursor-default"
+                      : "border-white/15 bg-white/10 hover:bg-white/15"}
+                  `}
+                >
+                  {(status === "ok" && simulatedVolume === "") ? "Fetch live data" : status === "loading" ? "Connecting…" : "Fetch live data"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-2xl px-5 py-3 border border-white/15 bg-white/10 hover:bg-white/15 transition font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* tiny status line */}
+              <p className="mt-3 text-[11px] text-white/50">
+                * Projections are based on current 24h volume and rewards fee, assuming they remain constant
+              </p>
+            </>
+          )}
+
+          {activeTab === "my-earnings" && (
+            <>
+              {/* Wallet Address Input */}
+              <label className="block text-sm text-white/70 mb-2">Your Wallet Address</label>
               <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
                 <input
                   type="text"
-                  inputMode="numeric"
-                  pattern="[0-9,.]*"
-                  value={formatNumberWithCommas(simulatedVolume)}
-                  onChange={(e) => {
-                    const inputValue = e.target.value;
-                    const cleanedValue = inputValue.replace(/[^0-9.]/g, '');
-                    const finalValue = cleanedValue.split('.').length > 2 ? `${cleanedValue.split('.')[0]}.${cleanedValue.split('.').slice(1).join('')}` : cleanedValue;
-                    setSimulatedVolume(finalValue);
-                  }}
-                  placeholder="e.g. 500,000"
+                  value={walletAddress}
+                  onChange={(e) => setWalletAddress(e.target.value)}
+                  placeholder="e.g. 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
                   className="w-full bg-transparent outline-none placeholder:text-white/30"
                 />
-                <span className="text-xs text-white/50">USD</span>
               </div>
-              <p className="mt-1 text-red-400 text-xs pl-2">
-                leave empty to use actual volume
+
+              {/* Check Button */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={fetchEarnings}
+                  className="rounded-2xl px-5 py-3 border border-white/15 bg-white/10 hover:bg-white/15 transition font-semibold"
+                >
+                  Check
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-2xl px-5 py-3 border border-white/15 bg-white/10 hover:bg-white/15 transition font-semibold"
+                >
+                  Close
+              </button>
+              </div>
+
+              {/* Total Earned Card */}
+              <div className="mt-6">
+                <NeonCard title="TOTAL EARNED" value={earnings ? fmtUSD.format(earnings) : "$0.00"} />
+              </div>
+
+              {/* Last Updated */}
+              <p className="mt-3 text-[11px] text-white/50">
+                Last updated: {liveMetrics?.lastUpdatedISO
+                  ? new Date(liveMetrics.lastUpdatedISO).toLocaleString()
+                  : "N/A"}
               </p>
-
-
-              {/* meta */}
-              <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <Meta label="24H VOLUME" value={fmtUSD.format(data?.volume ?? 0)} />
-                <Meta label="HOLDERS FEE" value={`${(metrics?.rewardsFeeBps / 100)?.toFixed(2) ?? 0}%`} />
-                <Meta label="TOTAL SUPPLY" value={fmtInt.format(data?.supply ?? 0)} />
-                <Meta
-                  label="Last updated"
-                  value={
-                    metrics?.lastUpdatedISO
-                      ? new Date(metrics.lastUpdatedISO).toLocaleString()
-                      : "N/A"
-                  }
-                />
-              </div>
-            </div>
-
-            {/* RIGHT: neon result cards */}
-            <div className="grid gap-4">
-              <NeonCard title="DAILY EARNINGS" value={fmtUSD.format(data?.daily ?? 0)} />
-              <NeonCard title="MONTHLY EARNINGS" value={fmtUSD.format(data?.monthly ?? 0)} />
-              <NeonCard title="YEARLY EARNINGS" value={fmtUSD.format(data?.yearly ?? 0)} />
-            </div>
-          </div>
-
-          {/* bottom actions */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={fetchLive}
-              disabled={status === "loading"}
-              className={`rounded-2xl px-5 py-3 border transition font-semibold
-                ${status === "ok"
-                  ? "border-emerald-400/40 bg-emerald-600/20 cursor-default"
-                  : "border-white/15 bg-white/10 hover:bg-white/15"}
-              `}
-            >
-              {(status === "ok" && simulatedVolume === "") ? "Fetch live data" : status === "loading" ? "Connecting…" : "Fetch live data"}
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl px-5 py-3 border border-white/15 bg-white/10 hover:bg-white/15 transition font-semibold"
-            >
-              Close
-            </button>
-          </div>
-
-          {/* tiny status line */}
-          <p className="mt-3 text-[11px] text-white/50">
-            * Projections are based on current 24h volume and rewards fee, assuming they remain constant
-          </p>
+            </>
+          )}
         </div>
       </div>
     </div>
