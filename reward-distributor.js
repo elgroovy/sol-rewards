@@ -311,7 +311,7 @@ async function distributeRewards() {
             accountBalance -= Constants.kSolToReserve * LAMPORTS_PER_SOL;
 
             // Divide the remaining accountBalance between the jackpot, treasury, and holders
-            const jackpotLamports = Math.floor(accountBalance * (Constants.kJackpotPercent / 100));
+            const jackpotLamports = Math.floor(accountBalance * (Constants.kLotteryPercent / 100));
             const treasuryLamports = Math.floor(accountBalance * (Constants.kTreasuryPercent / 100));
             const holdersLamports = accountBalance - jackpotLamports - treasuryLamports;
 

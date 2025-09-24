@@ -1,33 +1,30 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Constants } from "../../../constants";
 
 /** --- Demo values (easy to swap) --- */
-const DEMO_METRICS = {
-  volume24hUSD: 100_000,         // $100k daily volume
-  circulatingSupply: 998_948_239,
-  rewardsFeeBps: 400,            // 4.00% reflections
-  lastUpdatedISO: new Date().toISOString(),
-};
 
 export default function RewardsCalculatorModal({
   open,
   onClose,
-  apiBase = "",                   // e.g. "https://api.yourdomain.com"
-  defaultUseLive = false,         // set true if you want live on by default later
+  apiBase = "http://localhost:3000", // Constants.kBackendUrl,
+  defaultUseLive = false,
 }) {
-  const [holdings, setHoldings] = useState("1,000,000");
+  const [holdings, setHoldings] = useState("1000000");
   const [useLive, setUseLive] = useState(defaultUseLive);
   const [liveMetrics, setLiveMetrics] = useState(null);
   const [status, setStatus] = useState("idle"); // idle | loading | ok | error
+  const [simulatedVolume, setSimulatedVolume] = useState("");
 
   const metrics = useMemo(() => {
-    return useLive && liveMetrics ? liveMetrics : DEMO_METRICS;
-  }, [useLive, liveMetrics]);
+    return liveMetrics;
+  }, [liveMetrics]);
 
   const fmtUSD = useMemo(
     () =>
-      new Intl.NumberFormat(undefined, {
+      new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
+        currencyDisplay: "narrowSymbol",
         maximumFractionDigits: 2,
       }),
     []
@@ -39,21 +36,34 @@ export default function RewardsCalculatorModal({
   );
 
   const parseHoldings = (s) => {
-    const n = Number(String(s).replace(/[^\d]/g, ""));
+    const n = Number(String(s).replace(/[^0-9.]/g, ""));
     return Number.isFinite(n) ? n : 0;
   };
+
+  const formatNumberWithCommas = (numStr) => {
+    if (!numStr) return "";
+    // Handle decimal part separately
+    const parts = numStr.split('.');
+    // Format the integer part with commas
+    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    // Recombine with decimal part if present
+    return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
+  };
+
 
   const data = useMemo(() => {
     if (!metrics) return null;
     const supply = Math.max(0, Number(metrics.circulatingSupply || 0));
-    const volume = Math.max(0, Number(metrics.volume24hUSD || 0));
+    const liveVolume = Math.max(0, Number(metrics.volume24hUSD || 0));
+    const volumeForCalculation = simulatedVolume !== "" ? parseHoldings(simulatedVolume) : liveVolume;
     const feeBps = Math.max(0, Number(metrics.rewardsFeeBps || 0));
     const feePct = feeBps / 10_000;
 
     const userHoldings = parseHoldings(holdings);
     const share = supply > 0 ? Math.min(userHoldings, supply) / supply : 0;
 
-    const pool = volume * feePct;           // daily pool (USD)
+    const pool = volumeForCalculation * feePct;           // daily pool (USD)
+
     const daily = pool * share;
     const monthly = daily * 30.42;
     const yearly = daily * 365;
@@ -61,7 +71,8 @@ export default function RewardsCalculatorModal({
     return {
       userHoldings,
       supply,
-      volume,
+      volume: liveVolume, // Always display the live volume
+      volumeForCalculation, // This is used for projections, can be live or simulated
       feeBps,
       pool,
       daily,
@@ -69,17 +80,21 @@ export default function RewardsCalculatorModal({
       yearly,
       sharePct: share * 100,
     };
-  }, [metrics, holdings]);
+  }, [metrics, holdings, simulatedVolume]);
 
   /** optional: fetch live metrics on demand */
   const fetchLive = async () => {
     try {
-      if (!apiBase) { setUseLive(false); return; }
       setStatus("loading");
-      const res = await fetch(`${apiBase}/api/trt/metrics`, { cache: "no-store" });
+      const res = await fetch(apiBase + `/api/token-data`, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      setLiveMetrics(json);
+      setLiveMetrics({
+        volume24hUSD: json.volume,
+        circulatingSupply: json.supply,
+        rewardsFeeBps: json.fee * 10000, // convert fee to basis points
+        lastUpdatedISO: json.lastUpdated,
+      });
       setUseLive(true);
       setStatus("ok");
     } catch (e) {
@@ -87,6 +102,10 @@ export default function RewardsCalculatorModal({
       setUseLive(false);
     }
   };
+
+  useEffect(() => {
+    fetchLive();
+  }, []);
 
   if (!open) return null;
 
@@ -123,15 +142,34 @@ export default function RewardsCalculatorModal({
           <div className="grid md:grid-cols-2 gap-6">
             {/* LEFT: inputs + meta */}
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:p-5">
-              <label className="block text-sm text-white/70 mb-2">Your TRT Holdings</label>
+              <label className="block text-sm text-white/70 mb-2">
+                Your TRT Holdings{" "}
+                {data?.userHoldings > 0 && metrics?.circulatingSupply > 0 && (
+                  <span className="text-emerald-400">
+                    ({(data.userHoldings / metrics.circulatingSupply * 100).toFixed(4)}%)
+                  </span>
+                )}
+              </label>
               <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
                 <input
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9,]*"
-                  value={holdings}
-                  onChange={(e) => setHoldings(e.target.value)}
-                  placeholder="e.g., 1,000,000"
+                  pattern="[0-9,.]*"
+                  value={formatNumberWithCommas(holdings)}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    const cleanedValue = inputValue.replace(/[^0-9.]/g, '');
+                    const finalValue = cleanedValue.split('.').length > 2 ? `${cleanedValue.split('.')[0]}.${cleanedValue.split('.').slice(1).join('')}` : cleanedValue;
+                    
+                    // Limit holdings to current circulating supply
+                    const numericValue = parseHoldings(finalValue);
+                    if (metrics?.circulatingSupply && numericValue > metrics.circulatingSupply) {
+                      setHoldings(String(metrics.circulatingSupply));
+                    } else {
+                      setHoldings(finalValue);
+                    }
+                  }}
+                  placeholder="e.g. 1,000,000"
                   className="w-full bg-transparent outline-none placeholder:text-white/30"
                 />
                 <span className="text-xs text-white/50">TRT</span>
@@ -140,14 +178,22 @@ export default function RewardsCalculatorModal({
               {/* quick picks */}
               <div className="mt-3 flex flex-wrap gap-2">
                 {[
-                  ["100k", "100,000"],
-                  ["1M", "1,000,000"],
-                  ["Max", fmtInt.format(metrics?.circulatingSupply ?? 0)],
+                  ["100k", "100000"],
+                  ["1M", "1000000"],
+                  ["10M", "10000000"],
+                  ["Max", String(metrics?.circulatingSupply ?? 0)],
                 ].map(([label, val]) => (
                   <button
                     key={label}
                     type="button"
-                    onClick={() => setHoldings(val)}
+                    onClick={() => {
+                        const numericVal = parseHoldings(val);
+                        if (metrics?.circulatingSupply && numericVal > metrics.circulatingSupply) {
+                            setHoldings(String(metrics.circulatingSupply));
+                        } else {
+                            setHoldings(val);
+                        }
+                    }}
                     className="rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10 transition"
                   >
                     {label}
@@ -155,17 +201,38 @@ export default function RewardsCalculatorModal({
                 ))}
               </div>
 
+              {/* Volume Input */}
+              <label className="block text-sm text-white/70 mt-5 mb-2">Simulated Volume</label>
+              <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9,.]*"
+                  value={formatNumberWithCommas(simulatedVolume)}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    const cleanedValue = inputValue.replace(/[^0-9.]/g, '');
+                    const finalValue = cleanedValue.split('.').length > 2 ? `${cleanedValue.split('.')[0]}.${cleanedValue.split('.').slice(1).join('')}` : cleanedValue;
+                    setSimulatedVolume(finalValue);
+                  }}
+                  placeholder="e.g. 500,000"
+                  className="w-full bg-transparent outline-none placeholder:text-white/30"
+                />
+                <span className="text-xs text-white/50">USD</span>
+              </div>
+
+
               {/* meta */}
               <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <Meta label="Volume" value={fmtUSD.format(data?.volume ?? 0)} />
-                <Meta label="Fee" value={`${(metrics?.rewardsFeeBps ?? 0) / 100}%`} />
-                <Meta label="Current Supply" value={fmtInt.format(data?.supply ?? 0)} />
+                <Meta label="24H VOLUME" value={fmtUSD.format(data?.volume ?? 0)} />
+                <Meta label="HOLDERS FEE" value={`${(metrics?.rewardsFeeBps / 100)?.toFixed(2) ?? 0}%`} />
+                <Meta label="TOTAL SUPPLY" value={fmtInt.format(data?.supply ?? 0)} />
                 <Meta
                   label="Last updated"
                   value={
-                    useLive && metrics?.lastUpdatedISO
+                    metrics?.lastUpdatedISO
                       ? new Date(metrics.lastUpdatedISO).toLocaleString()
-                      : "demo"
+                      : "N/A"
                   }
                 />
               </div>
@@ -174,8 +241,8 @@ export default function RewardsCalculatorModal({
             {/* RIGHT: neon result cards */}
             <div className="grid gap-4">
               <NeonCard title="DAILY EARNINGS" value={fmtUSD.format(data?.daily ?? 0)} />
-              <NeonCard title="MONTHLY PROJECTION" value={fmtUSD.format(data?.monthly ?? 0)} />
-              <NeonCard title="YEARLY PROJECTION" value={fmtUSD.format(data?.yearly ?? 0)} />
+              <NeonCard title="MONTHLY EARNINGS" value={fmtUSD.format(data?.monthly ?? 0)} />
+              <NeonCard title="YEARLY EARNINGS" value={fmtUSD.format(data?.yearly ?? 0)} />
             </div>
           </div>
 
@@ -183,16 +250,15 @@ export default function RewardsCalculatorModal({
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={useLive ? undefined : fetchLive}
-              disabled={useLive || status === "loading" || !apiBase}
+              onClick={fetchLive}
+              disabled={status === "loading"}
               className={`rounded-2xl px-5 py-3 border transition font-semibold
-                ${useLive
+                ${status === "ok"
                   ? "border-emerald-400/40 bg-emerald-600/20 cursor-default"
                   : "border-white/15 bg-white/10 hover:bg-white/15"}
               `}
-              title={!apiBase ? "Set apiBase prop to enable" : ""}
             >
-              {useLive ? "Using live data" : status === "loading" ? "Connecting…" : "Use live data"}
+              {(status === "ok" && simulatedVolume === "") ? "Fetch live data" : status === "loading" ? "Connecting…" : "Fetch live data"}
             </button>
 
             <button
@@ -206,7 +272,7 @@ export default function RewardsCalculatorModal({
 
           {/* tiny status line */}
           <p className="mt-3 text-[11px] text-white/50">
-            * Projections are based on current 24h volume and rewards fee, assuming they remain constant.
+            * Projections are based on current 24h volume and rewards fee, assuming they remain constant
           </p>
         </div>
       </div>
