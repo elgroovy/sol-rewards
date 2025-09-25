@@ -41,3 +41,122 @@
   display: inline-block;
   animation: noise 0.3s infinite;
 }
+
+/* Gradient border for the token text */
+.gradient-border-text {
+  position: relative;
+  display: inline-flex;
+  padding: 2px; /* This will be the border thickness */
+  border-radius: 9999px; /* This makes it fully rounded like a pill */
+  overflow: hidden;
+}
+
+.gradient-border-text::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #FC00FF, #00DBDE); /* Example gradient colors */
+  z-index: -1;
+  border-radius: inherit; /* Inherit border-radius from parent */
+}
+
+.gradient-border-text > div {
+  background-color: #070B16; /* Background color of the inner element */
+  border-radius: inherit; /* Inherit border-radius from parent */
+  padding: 0.3rem 0.8rem; /* Inner padding */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem; /* text-xs */
+  text-transform: uppercase; /* uppercase */
+  letter-spacing: 0.35em; /* tracking-[0.35em] */
+  color: #a5f3fc; /* text-cyan-300/80 */
+}
+
+/* Gradient glow on hover for buttons */
+.btn-gradient-glow {
+  position: relative;
+  /* Ensure element has a background */
+  background-color: transparent;
+  /* Add padding to account for glow */
+  padding: 1px;
+}
+
+.btn-gradient-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: calc(1rem + 1px); /* Match the button's rounded-2xl border-radius + padding */
+  padding: 2px; /* The glow thickness */
+  background: linear-gradient(to right, #FC00FF, #00DBDE); /* Example gradient */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none; /* Prevents it from interfering with mouse events on the button */
+}
+
+.btn-gradient-glow:hover::before {
+  opacity: 1;
+}
+
+/* Specific button styles that might conflict */
+.btn-gradient-glow a {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0.75rem 1.5rem; /* py-3 px-6 */
+  border-radius: calc(1rem - 1px); /* rounded-2xl - 1px for parent padding */
+  background-color: #070B16; /* Match the main background to "cut out" the glow */
+}
+
+.btn-gradient-glow:hover a {
+  background-color: transparent; /* Remove background on hover to show full glow */
+}
+
+/* === Neon gradient glow on hover ======================================= */
+/* Add class "neon-hover" to any button/link wrapper or the <a> itself.   */
+/* You can tweak colors per-button via CSS vars: --neon-c1 / --neon-c2.    */
+:root {
+  --neon-c1: #00ffff;  /* cyan */
+  --neon-c2: #ff00ff;  /* magenta */
+}
+
+.neon-hover {
+  position: relative;
+  isolation: isolate;   /* allow z-index:-1 pseudo behind */
+  transition: transform .15s ease-out;
+}
+
+.neon-hover::before {
+  content: "";
+  position: absolute;
+  inset: -2px;                 /* slightly outside the edge */
+  border-radius: inherit;
+  z-index: -1;
+  background: conic-gradient(from 0deg at 50% 50%,
+              var(--neon-c1), var(--neon-c2), var(--neon-c1));
+  background-size: 200% 200%;
+  filter: blur(12px);
+  opacity: 0;
+  transform: scale(0.98);
+  transition:
+    opacity .25s ease,
+    transform .25s ease,
+    background-position 1.2s linear;
+}
+
+.neon-hover:hover::before,
+.neon-hover:focus-visible::before {
+  opacity: 0.9;
+  transform: scale(1);
+  background-position: 100% 0;
+}
+
+/* tiny lift */
+.neon-hover:hover { transform: translateY(-1px); }
