@@ -11,11 +11,13 @@ export default function SiteFooter() {
         </div>
       </div>
       {/* Copyright */}
-      <div className="text-xs tracking-wider">
-        © {new Date().getFullYear()} $TRT — Test Rewards Token
+      <div className="text-xs tracking-wider flicker-effect">
+              <span className="noise-effect-inline">© {new Date().getFullYear()} $TRT — Test Rewards Token</span>
       </div>
       {/* Status line */}
-      <div className="mt-2 text-[10px] opacity-70">NO SIGNAL</div>
+      <div className="mt-2 text-[10px] opacity-70 flicker-effect">
+              <span className="noise-effect-inline">NO SIGNAL</span>
+      </div>
     </footer>
   );
 }

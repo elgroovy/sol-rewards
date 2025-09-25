@@ -33,6 +33,11 @@
 
 .noise-effect {
   position: relative;
-  display: inline-block; /* Added to shrink element to content width */
   animation: noise 0.3s infinite; /* Apply the noise animation directly */
+}
+
+.noise-effect-inline {
+  position: relative;
+  display: inline-block;
+  animation: noise 0.3s infinite;
 }
