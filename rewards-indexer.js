@@ -7,8 +7,10 @@
  *   - indexer_cursor
  */
 
-const fetch = require("node-fetch");
-const db = require("./db");
+import fetch from "node-fetch";
+import 'dotenv/config';
+import * as db from "./db.js"
+import { PublicKey } from "@solana/web3.js";
 
 // --- ENV & constants --------------------------------------------
 const {
@@ -23,6 +25,8 @@ if (!HELIUS_API_KEY || !DISTRIBUTOR_WALLET) {
 }
 
 const HELIUS_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+// Helius REST bulk endpoint for enhanced parsed transactions
+const HELIUS_REST_URL = `https://api.helius.xyz/v0/transactions?api-key=${process.env.HELIUS_API_KEY}`;
 
 const INTERVAL_MS = Number(INDEX_INTERVAL_MIN) * 60 * 1000;
 
@@ -89,12 +93,50 @@ async function fetchSignatures(before, limit = 1000) {
   return rpc("getSignaturesForAddress", [DISTRIBUTOR_WALLET, { limit, before }]);
 }
 
-async function fetchTransactionsBatch(sigs) {
-  const batch = sigs.map((s) => ({
-    method: "getParsedTransaction",
-    params: [s, { maxSupportedTransactionVersion: 0 }],
-  }));
-  return rpcBatch(batch);
+async function postHeliusBulk(signatures, { signal } = {}) {
+  const r = await fetch(HELIUS_REST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transactions: signatures }),
+    signal,
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => "");
+    throw new Error(`Helius bulk error ${r.status}: ${text}`);
+  }
+  return r.json(); // array of parsed txs
+}
+
+export async function fetchTransactionsBatch(signatures, opts = {}) {
+  const {
+    chunkSize = 100,        // Helius supports ~100 per call
+    maxRetries = 3,
+    backoffMs = 500,
+    signal,
+  } = opts;
+
+  const results = [];
+  for (let i = 0; i < signatures.length; i += chunkSize) {
+    const chunk = signatures.slice(i, i + chunkSize);
+
+    let attempt = 0;
+    // simple retry with linear backoff
+    while (true) {
+      try {
+        const arr = await postHeliusBulk(chunk, { signal });
+        // Helius returns an array; filter out null/undefined just in case
+        for (const tx of arr || []) {
+          if (tx) results.push(tx);
+        }
+        break;
+      } catch (err) {
+        attempt += 1;
+        if (attempt > maxRetries) throw err;
+        await sleep(backoffMs * attempt);
+      }
+    }
+  }
+  return results;
 }
 
 // Cache mint decimals to minimize extra RPC
@@ -113,73 +155,114 @@ async function getMintDecimals(mint) {
   return dec;
 }
 
+const onCurveCache = new Map();
+
+/* fast on-curve test */
+export function isOnCurveAddress(base58) {
+  const hit = onCurveCache.get(base58);
+  if (hit !== undefined) return hit;
+  try {
+    const pk = new PublicKey(base58);
+    const ok = PublicKey.isOnCurve(pk.toBytes());
+    onCurveCache.set(base58, ok);
+    return ok;
+  } catch {
+    onCurveCache.set(base58, false);
+    return false;
+  }
+}
+
 // --- Extraction: build events in RAW units ----------------------
 /**
+ * Extract rewards from a Helius enhanced transaction
+ * (response from /v0/transactions bulk endpoint).
+ *
  * Returns an array of event objects:
- * {
- *   signature, slot, blockTime (Date),
- *   wallet, assetType: 'SOL'|'SPL',
- *   tokenMint: 'SOL' | <mint>,
- *   amountRaw: string (integer string),
+ *   signature: string,
+ *   slot: number,
+ *   blockTime: Date,
+ *   wallet: string,
+ *   assetType: 'SOL' | 'SPL',
+ *   tokenMint: string,
+ *   amountRaw: string,
  *   decimals: number
- * }
  */
-async function extractRewards(tx) {
-  if (!tx?.result) return [];
-  const result = tx.result;
-  const sig = result.transaction.signatures[0];
-  const slot = result.slot;
-  const blockTime = result.blockTime ? new Date(result.blockTime * 1000) : new Date();
-
+export function extractRewards(tx) {
+  if (!tx) return [];
   const out = [];
 
-  // Native SOL transfers: look at parsed system transfers where DISTRIBUTOR_WALLET is source
-  for (const ix of result.transaction.message.instructions || []) {
-    if (ix.program === "system" && ix.parsed?.type === "transfer") {
-      const info = ix.parsed.info;
-      if (info?.source === DISTRIBUTOR_WALLET && info?.destination && info?.lamports) {
-        // lamports are raw integer units
-        const lamports = String(info.lamports); // keep as string to avoid JS precision issues
-        out.push({
-          signature: sig,
-          slot,
-          blockTime,
-          wallet: info.destination,
-          assetType: "SOL",
-          tokenMint: SOL_SENTINEL_MINT,
-          amountRaw: lamports,
-          decimals: SOL_DECIMALS,
-        });
-      }
+  // configurable guard for rent-size SOL movements (lamports)
+  const RENT_LAMPORTS_MAX = Number(process.env.RENT_LAMPORTS_MAX ?? 5_000_000); // 0.005 SOL default
+
+  const signature = tx.signature;
+  const slot = tx.slot;
+  const blockTime = tx.timestamp ? new Date(tx.timestamp * 1000) : new Date();
+
+  // Do we have any token payouts from distributor in this tx?
+  const hasTokenPayout =
+    Array.isArray(tx.tokenTransfers) &&
+    tx.tokenTransfers.some(
+      (tt) => tt.fromUserAccount === DISTRIBUTOR_WALLET && tt.tokenAmount > 0
+    );
+
+  // Quick instruction hint: many “rent” ops come with create/close account types
+  const hasCreateOrCloseInstr =
+    Array.isArray(tx.instructions) &&
+    tx.instructions.some((ix) => {
+      const t = (ix?.type || "").toString().toUpperCase();
+      return t.includes("CREATE") || t.includes("CLOSE");
+    });
+
+  // --- Native SOL transfers (filter rent-sized ones tied to token payouts) ---
+  if (Array.isArray(tx.nativeTransfers)) {
+    for (const nt of tx.nativeTransfers) {
+      if (nt.fromUserAccount !== DISTRIBUTOR_WALLET) continue;
+      if (!nt.toUserAccount || !(nt.amount > 0)) continue;
+
+
+      // Skip off-curve destinations (e.g. temp accounts / PDAs).
+      // This will skip Jupiter Aggregator swap transactions and similar things
+      if (!isOnCurveAddress(nt.toUserAccount)) continue;
+
+      // Heuristic to drop ATA rent:
+      //  - if this tx also sends a token (payout), and
+      //  - the SOL amount is small (≤ RENT_LAMPORTS_MAX), and/or
+      //  - the tx shows create/close instructions
+      const looksLikeRent =
+        (hasTokenPayout && nt.amount <= RENT_LAMPORTS_MAX) ||
+        (hasCreateOrCloseInstr && nt.amount <= RENT_LAMPORTS_MAX);
+
+      if (looksLikeRent) continue; // skip rent funding / close-account dust
+
+      out.push({
+        signature,
+        slot,
+        blockTime,
+        wallet: nt.toUserAccount,
+        assetType: "SOL",
+        tokenMint: "SOL", // sentinel for native SOL
+        amountRaw: String(nt.amount), // lamports
+        decimals: 9,
+      });
     }
   }
 
-  // SPL token transfers: parsed token program transfers where DISTRIBUTOR_WALLET is authority/sourceOwner
-  for (const ix of result.transaction.message.instructions || []) {
-    if (ix.program === "spl-token" && ix.parsed?.type === "transfer") {
-      const info = ix.parsed.info;
-      const isFromDistributor =
-        info?.sourceOwner === DISTRIBUTOR_WALLET ||
-        info?.authority === DISTRIBUTOR_WALLET ||
-        info?.owner === DISTRIBUTOR_WALLET; // various parsed shapes
+  // --- SPL token transfers (keep as-is) ---
+  if (Array.isArray(tx.tokenTransfers)) {
+    for (const tt of tx.tokenTransfers) {
+      if (tt.fromUserAccount !== DISTRIBUTOR_WALLET) continue;
+      if (!tt.toUserAccount || !(tt.tokenAmount > 0)) continue;
 
-      if (isFromDistributor && info?.mint && (info?.destinationOwner || info?.destination)) {
-        // Most parsed payloads put 'amount' as raw integer (string)
-        const raw = info.amount != null ? String(info.amount) : null;
-        if (!raw) continue;
-
-        const decimals = await getMintDecimals(info.mint);
-        out.push({
-          signature: sig,
-          slot,
-          blockTime,
-          wallet: info.destinationOwner || info.destination,
-          assetType: "SPL",
-          tokenMint: info.mint,
-          amountRaw: raw,
-          decimals: Number.isFinite(decimals) ? decimals : 0,
-        });
-      }
+      out.push({
+        signature,
+        slot,
+        blockTime,
+        wallet: tt.toUserAccount,
+        assetType: "SPL",
+        tokenMint: tt.mint,
+        amountRaw: String(tt.tokenAmount),
+        decimals: Number.isFinite(tt.decimals) ? tt.decimals : 0,
+      });
     }
   }
 
@@ -207,7 +290,7 @@ async function saveRewards(events) {
           ev.wallet,
           ev.assetType,
           ev.tokenMint,
-          ev.amountRaw,                   // string OK; mysql2 will coerce
+          ev.amountRaw,
           ev.decimals,
         ]
       );
@@ -266,25 +349,24 @@ async function runOnce() {
     if (sigs.length === 0) break;
 
     // Process in batches to reduce round-trips
-    for (let i = 0; i < sigs.length; i += 50) {
-      const batch = sigs.slice(i, i + 50).map((s) => s.signature);
+    for (let i = 0; i < sigs.length; i += 100) {
+      const batch = sigs.slice(i, i + 100).map((s) => s.signature);
       const txResults = await fetchTransactionsBatch(batch);
 
       for (const tx of txResults) {
-        if (!tx?.result) continue;
-        const sig = tx.result.transaction.signatures[0];
+        if (!tx || !tx.signature) continue;
 
-        // Stop if we reached the last saved cursor (oldest boundary)
+        const sig = tx.signature;
         if (lastSignature && sig === lastSignature) {
           done = true;
           break;
         }
 
-        const rewards = await extractRewards(tx);
+        const rewards = extractRewards(tx);
         if (rewards.length) {
           await saveRewards(rewards);
           if (!newestProcessed) {
-            newestProcessed = { sig, slot: tx.result.slot };
+            newestProcessed = { sig, slot: tx.slot };
           }
         }
       }
@@ -314,6 +396,7 @@ async function loop() {
   }
 }
 
-if (require.main === module) {
+import { fileURLToPath } from "url";
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   loop();
 }

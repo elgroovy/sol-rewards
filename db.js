@@ -1,10 +1,9 @@
+import mysql from "mysql2/promise";
 
-const mysql = require("mysql2/promise");
-
-const pool = mysql.createPool({
+export const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || "127.0.0.1",
   port: Number(process.env.MYSQL_PORT || 3306),
-  user: process.env.MYSQL_USER || "admin",
+  user: process.env.MYSQL_USER || "root",
   password: process.env.MYSQL_PASSWORD || "",
   database: process.env.MYSQL_DATABASE || "solrewards",
   waitForConnections: true,
@@ -13,15 +12,13 @@ const pool = mysql.createPool({
   dateStrings: true,
 });
 
-function query(sql, params) {
+export function query(sql, params) {
   return pool.execute(sql, params);
 }
 
-function getConnection() {
+export function getConnection() {
   return pool.getConnection();
 }
-
-module.exports = { pool, query, getConnection };
 
 /*
 CREATE DATABASE IF NOT EXISTS solrewards CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
