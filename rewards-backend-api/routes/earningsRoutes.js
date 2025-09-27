@@ -1,13 +1,17 @@
-// rewards-backend-api/routes/earningsRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const earningsController = require('../controllers/earningsController');
+const earnings = require("./earningsController");
 
-/**
- * @route GET /api/earnings/:walletAddress
- * @desc Get total earnings for a given wallet address
- * @access Public
- */
-router.get('/', earningsController.getEarningsByWalletAddress);
+// Totals for a wallet (SOL, USDC, other tokens) + lastUpdated watermark
+router.get("/earnings", earnings.getEarningsTotals);
+
+// Paginated payout history for a wallet (timeline/audit)
+router.get("/earnings/history", earnings.getEarningsHistory);
+
+// Leaderboard by asset (SOL/USDC/by token mint), optional time window
+router.get("/earnings/leaderboard", earnings.getLeaderboard);
+
+// Indexer/status (last cursor + watermark)
+router.get("/earnings/status", earnings.getIndexerStatus);
 
 module.exports = router;

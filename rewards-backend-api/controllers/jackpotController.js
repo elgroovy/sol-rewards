@@ -1,4 +1,4 @@
-const db = require('../db');
+const db = require('../../db');
 
 const TelegramBot = require('node-telegram-bot-api');
 

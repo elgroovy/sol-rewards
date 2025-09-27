@@ -24,21 +24,21 @@
 #### `rewards_totals`
 
 * One row per recipient wallet.
-* Columns: `wallet`, `sol_total`, `usdc_total`, `last_updated`.
+* Columns: `wallet`, `sol_total_raw`, `usdc_total_raw`, `last_updated`.
 * Primary key: `wallet`.
 
 #### `rewards_token_totals`
 
 * One row per wallet per token mint.
-* Columns: `wallet`, `token_mint`, `token_symbol`, `total_amount`, `last_updated`.
+* Columns: `wallet`, `token_mint`, `token_symbol`, `total_raw`, `decimals`, `last_updated`.
 * Primary key: `(wallet, token_mint)`.
 * Index on `token_mint`.
 
 #### `rewards_events`
 
 * One row per payout to a recipient.
-* Columns: `signature`, `slot`, `block_time`, `wallet`, `asset_type`, `token_mint`, `amount`.
-* Unique constraint on `(signature, wallet, token_mint|SOL)`.
+* Columns: `signature`, `slot`, `block_time`, `wallet`, `asset_type`, `token_mint`, `amount_raw`, `decimals`.
+* Unique constraint on `(signature, wallet, token_mint)`.
 * Indexes on `(wallet, block_time)` and `(token_mint, block_time)`.
 
 #### `indexer_cursor`

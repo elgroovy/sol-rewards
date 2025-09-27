@@ -1,344 +1,386 @@
-// earningsController.js
-// Totals rewards sent FROM fee distributor TO a user across SOL + SPL (incl. Token-2022)
-// API: GET /api/earnings?address=<wallet>&limit=150&before=<signature>
+/**
+ * - Serves reward totals & history from MySQL database (no on-demand chain parsing).
+ * - Assumes a background indexer maintains:
+ *     - rewards_totals         (wallet -> sol_total, usdc_total, last_updated)
+ *     - rewards_token_totals   (wallet, token_mint -> total_amount, token_symbol, last_updated)
+ *     - rewards_events         (signature, slot, block_time, wallet, asset_type, token_mint, amount)
+ *     - indexer_cursor         (source_wallet, last_signature, last_slot, updated_at)
+ */
 
-const express = require("express");
-const { Connection, PublicKey } = require("@solana/web3.js");
-const { Constants } = require("../../constants");
+const mysql = require("mysql2/promise");
 
-// ------------------- CONFIG -------------------
-const INCLUDE_TOKEN2022 = true; // set false if you don't use Token-2022
+const {
+  MYSQL_HOST = "127.0.0.1",
+  MYSQL_PORT = "3306",
+  MYSQL_USER = "root",
+  MYSQL_PASSWORD = "",
+  MYSQL_DATABASE = "trt",
+  FEES_WALLET = "", // optional, used by /status; empty = first/only row in indexer_cursor
+} = process.env;
 
-// Program IDs
-const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-const TOKEN_2022_PROGRAM_ID = new PublicKey("TokenzQdBNbLqP6GzjT16wyGg1dYVJ3r7wHb7x7S6Q2");
-
-// Pseudo-mint for SOL (wSOL canonical mint id)
-const SOL_MINT = "So11111111111111111111111111111111111111112";
-
-// Symbols (extend as needed)
-const SYMBOLS = {
-  [SOL_MINT]: "SOL",
-  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: "USDC",
-  // "<TRT_MINT>": "TRT",
-};
-
-// Optional extra SOL sources (comma-separated base58 addresses)
-const EXTRA_SOL_SOURCES = (process.env.EXTRA_SOL_SOURCES || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-// RPC connection
-const connection = new Connection(Constants.kHeliusRPCEndpoint, {
-  commitment: "confirmed",
-  disableRetryOnRateLimit: true,
-});
-
-// ------------------- CACHES -------------------
-let distributorCache = {
-  fetchedAt: 0,
-  tokenAccounts: [], // SPL + (optionally) Token-2022 token accounts of the distributor
-};
-const DISTRIBUTOR_CACHE_TTL_MS = 10 * 60 * 1000;
-
-// ------------------- UTILS -------------------
-function createLimiter(max = 6) {
-  let active = 0;
-  const q = [];
-  const run = () => {
-    if (active >= max || q.length === 0) return;
-    active++;
-    const { fn, resolve, reject } = q.shift();
-    Promise.resolve()
-      .then(fn)
-      .then((v) => {
-        active--;
-        resolve(v);
-        run();
-      })
-      .catch((e) => {
-        active--;
-        reject(e);
-        run();
-      });
-  };
-  return (fn) =>
-    new Promise((resolve, reject) => {
-      q.push({ fn, resolve, reject });
-      run();
+let pool;
+async function getPool() {
+  if (!pool) {
+    pool = mysql.createPool({
+      host: MYSQL_HOST,
+      port: Number(MYSQL_PORT),
+      user: MYSQL_USER,
+      password: MYSQL_PASSWORD,
+      database: MYSQL_DATABASE,
+      waitForConnections: true,
+      connectionLimit: 10,
+      maxIdle: 10,
+      idleTimeout: 60000,
+      queueLimit: 0,
+      charset: "utf8mb4_general_ci",
+      supportBigNumbers: true,
+      dateStrings: true,
     });
-}
-const limitTx = createLimiter(6);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-// ------------------- HELPERS -------------------
-async function getDistributorTokenAccounts(distributorPk) {
-  const now = Date.now();
-  if (now - distributorCache.fetchedAt < DISTRIBUTOR_CACHE_TTL_MS) {
-    return distributorCache.tokenAccounts;
   }
-  const result = [];
-
-  // SPL token accounts
-  {
-    const { value } = await connection.getTokenAccountsByOwner(
-      distributorPk,
-      { programId: TOKEN_PROGRAM_ID },
-      "confirmed"
-    );
-    for (const a of value) result.push(a.pubkey.toBase58());
-  }
-
-  // Token-2022 token accounts
-  if (INCLUDE_TOKEN2022) {
-    try {
-      const { value } = await connection.getTokenAccountsByOwner(
-        distributorPk,
-        { programId: TOKEN_2022_PROGRAM_ID },
-        "confirmed"
-      );
-      for (const a of value) result.push(a.pubkey.toBase58());
-    } catch {
-      // some RPCs may not support; ignore
-    }
-  }
-
-  distributorCache = { fetchedAt: now, tokenAccounts: result };
-  return result;
+  return pool;
 }
 
-async function getSigs(addr, limit = 150, before) {
-  const opts = { limit };
-  if (before) opts.before = before;
-  return connection.getSignaturesForAddress(new PublicKey(addr), opts, "confirmed");
-}
+// Helpers
+const isNonEmptyString = (s) => typeof s === "string" && s.trim().length > 0;
 
-// Use PARSED tx so System Program transfers are readable
-async function fetchTx(signature) {
-  return limitTx(async () => {
-    for (let i = 0; i < 3; i++) {
-      try {
-        const tx = await connection.getParsedTransaction(signature, {
-          maxSupportedTransactionVersion: 0,
-          commitment: "confirmed",
-        });
-        return tx || null;
-      } catch {
-        await sleep(200 * (i + 1));
-      }
-    }
-    return null;
-  });
-}
-
-// ------------------- CORE ACCUMULATION -------------------
-function accumulateFromTx(
-  tx,
-  distributorPkStr,
-  extraSolSources,
-  userPkStr,
-  totalsByMint
-) {
-  if (!tx || !tx.meta) return;
-
-  const SYS_PROG_ID = "11111111111111111111111111111111";
-  const meta = tx.meta;
-  const message = tx.transaction.message;
-
-  // accountKeys as base58 (parsed/unparsed safe)
-  const accountKeys = (message.accountKeys || [])
-    .map((k) => {
-      if (typeof k === "string") return k;
-      if (k?.toBase58) return k.toBase58();
-      if (k?.pubkey) return typeof k.pubkey === "string" ? k.pubkey : k.pubkey.toBase58?.();
-      return null;
-    })
-    .filter(Boolean);
-
-  // ---------------- SOL (native) — batched-safe ----------------
-  // sum all parsed System transfers to this user from allowed sources (top-level + inner)
-  const solSourceSet = new Set([distributorPkStr, ...(extraSolSources || [])]);
-  let lamportsToUser = 0;
-
-  const scanIx = (ix) => {
-    if (!ix) return;
-    const isSystem =
-      ix.program === "system" ||
-      ix.programId === SYS_PROG_ID ||
-      (typeof ix.programId === "object" && ix.programId?.toBase58?.() === SYS_PROG_ID);
-    if (!isSystem) return;
-
-    const info = ix.parsed?.info;
-    if (!info) return;
-
-    const src = info.source;
-    const dst = info.destination;
-    const l = Number(info.lamports || 0);
-
-    if (l > 0 && dst === userPkStr && solSourceSet.has(src)) {
-      lamportsToUser += l; // can accumulate multiple transfers in same tx
-    }
-  };
-
-  (message.instructions || []).forEach(scanIx);
-  (meta.innerInstructions || []).forEach((ii) =>
-    (ii.instructions || []).forEach(scanIx)
-  );
-
-  // clamp by the user's actual net lamport delta in this tx (pre/post)
-  let userLamportDelta = 0;
-  const userIndex = accountKeys.indexOf(userPkStr);
-  if (userIndex !== -1) {
-    const preU = meta.preBalances[userIndex] || 0;
-    const postU = meta.postBalances[userIndex] || 0;
-    userLamportDelta = Math.max(0, postU - preU);
-  }
-  const addLamports = Math.min(lamportsToUser, userLamportDelta);
-  if (addLamports > 0) {
-    totalsByMint[SOL_MINT] = (totalsByMint[SOL_MINT] || 0) + addLamports / 1e9;
-  }
-
-  // ---------------- SPL / Token-2022 ----------------
-  const preTB = meta.preTokenBalances || [];
-  const postTB = meta.postTokenBalances || [];
-
-  const preMap = new Map();
-  for (const b of preTB) {
-    preMap.set(`${b.accountIndex}|${b.mint}`, Number(b.uiTokenAmount?.uiAmount || 0));
-  }
-  const postMap = new Map();
-  for (const b of postTB) {
-    postMap.set(`${b.accountIndex}|${b.mint}`, Number(b.uiTokenAmount?.uiAmount || 0));
-  }
-
-  const ownerByIndexMintPre = new Map();
-  for (const b of preTB) {
-    ownerByIndexMintPre.set(`${b.accountIndex}|${b.mint}`, b.owner);
-  }
-  const ownerByIndexMintPost = new Map();
-  for (const b of postTB) {
-    ownerByIndexMintPost.set(`${b.accountIndex}|${b.mint}`, b.owner);
-  }
-
-  const seen = new Set([...preMap.keys(), ...postMap.keys()]);
-  const mintLoss = {};
-  const mintGain = {};
-
-  for (const key of seen) {
-    const [idxStr, mint] = key.split("|");
-    const idx = Number(idxStr);
-    const pre = preMap.get(key) || 0;
-    const post = postMap.get(key) || 0;
-    const delta = post - pre; // + if increased, - if decreased
-
-    const owner =
-      ownerByIndexMintPost.get(key) ||
-      ownerByIndexMintPre.get(key) ||
-      accountKeys[idx];
-
-    if (owner === distributorPkStr && delta < 0) {
-      mintLoss[mint] = (mintLoss[mint] || 0) + Math.abs(delta);
-    } else if (owner === userPkStr && delta > 0) {
-      mintGain[mint] = (mintGain[mint] || 0) + delta;
-    }
-  }
-
-  for (const mint of new Set([...Object.keys(mintLoss), ...Object.keys(mintGain)])) {
-    const add = Math.min(mintLoss[mint] || 0, mintGain[mint] || 0);
-    if (add > 0) {
-      totalsByMint[mint] = (totalsByMint[mint] || 0) + add;
-    }
-  }
-}
-
-// ------------------- CONTROLLER -------------------
-const getEarningsByWalletAddress = async (req, res) => {
+const asISO = (ts) => {
+  // MySQL TIMESTAMP string (UTC) → ISO string
+  if (!ts) return null;
   try {
-    const userAddr = String(req.query.address || "").trim();
-    if (!userAddr) {
+    // If already ISO-like, return it; else construct Date toISOString
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return d.toISOString();
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * GET /api/earnings?address=...
+ * Returns: { address, items: [{mint?, symbol?, amount}], lastUpdatedISO }
+ * - SOL and USDC from rewards_totals
+ * - Other tokens from rewards_token_totals
+ * - lastUpdated from indexer watermark (indexer_cursor.updated_at) if available,
+ *   else the max(last_updated) from totals tables for this wallet.
+ */
+exports.getEarningsTotals = async (req, res) => {
+  try {
+    const address = String(req.query.address || "").trim();
+    if (!isNonEmptyString(address)) {
       return res.status(400).json({ error: "Missing ?address" });
     }
 
-    const limit = Math.min(Math.max(parseInt(req.query.limit || "150", 10), 10), 500);
-    const before = req.query.before ? String(req.query.before) : undefined;
+    const pool = await getPool();
 
-    const distributorPkStr = Constants.kFeeRecipientWalletPubkey;
-    const distributorPk = new PublicKey(distributorPkStr);
-    // const userPk = new PublicKey(userAddr); // constructed implicitly by logic
+    // Fetch SOL/USDC totals
+    const [totalsRows] = await pool.execute(
+      `SELECT sol_total, usdc_total, last_updated
+       FROM rewards_totals
+       WHERE wallet = ?`,
+      [address]
+    );
 
-    // 1) Distributor token accounts (cached)
-    const distributorTokenAccounts = await getDistributorTokenAccounts(distributorPk);
+    let solTotal = 0;
+    let usdcTotal = 0;
+    let walletLastUpdated = null;
 
-    // 2) Signatures touching distributor SOL, extra SOL senders, and distributor token accounts
-    const sigs = [];
-    const pushAll = (arr) => arr && arr.forEach((s) => sigs.push(s));
-
-    // Distributor SOL
-    pushAll(await getSigs(distributorPkStr, limit, before));
-
-    // Extra SOL sources
-    for (const extra of EXTRA_SOL_SOURCES) {
-      pushAll(await getSigs(extra, Math.max(50, Math.floor(limit / 2)), before));
+    if (totalsRows.length > 0) {
+      const row = totalsRows[0];
+      solTotal = Number(row.sol_total || 0);
+      usdcTotal = Number(row.usdc_total || 0);
+      walletLastUpdated = asISO(row.last_updated);
     }
 
-    // Token accounts
-    for (const ata of distributorTokenAccounts) {
-      pushAll(await getSigs(ata, Math.max(50, Math.floor(limit / 2)), before));
+    // Fetch other token totals (row-per-token)
+    const [tokenRows] = await pool.execute(
+      `SELECT token_mint, token_symbol, total_amount, last_updated
+       FROM rewards_token_totals
+       WHERE wallet = ?`,
+      [address]
+    );
+
+    // Assemble items array for front-end compatibility
+    const items = [];
+
+    // Include SOL and USDC first (use symbols)
+    if (solTotal && solTotal !== 0) {
+      items.push({ symbol: "SOL", amount: solTotal, mint: null });
+    }
+    if (usdcTotal && usdcTotal !== 0) {
+      items.push({ symbol: "USDC", amount: usdcTotal, mint: null });
     }
 
-    // 3) Dedup + sort newest-first, cap to reasonable page
-    const uniq = new Map();
-    for (const s of sigs) if (!uniq.has(s.signature)) uniq.set(s.signature, s);
-    const signatures = Array.from(uniq.values())
-      .sort((a, b) => b.slot - a.slot)
-      .slice(0, Math.max(limit, 50));
-
-    if (signatures.length === 0) {
-      return res.json({
-        address: userAddr,
-        items: [],
-        scannedTxCount: 0,
-        lastSignatureScanned: before || null,
-        lastUpdatedISO: new Date().toISOString(),
+    // Add other tokens (mint-based)
+    for (const r of tokenRows) {
+      const amount = Number(r.total_amount || 0);
+      if (amount === 0) continue;
+      items.push({
+        mint: r.token_mint,
+        symbol: r.token_symbol || null, // symbol is convenience; may be null
+        amount,
       });
     }
 
-    // 4) Fetch txs and accumulate
-    const totalsByMint = {};
-    const lastSig = signatures[signatures.length - 1].signature;
+    // Determine global lastUpdated watermark (prefer indexer_cursor)
+    let lastUpdatedISO = null;
 
-    await Promise.all(
-      signatures.map(({ signature }) =>
-        fetchTx(signature).then((tx) => {
-          if (!tx) return;
-          try {
-            accumulateFromTx(tx, distributorPkStr, EXTRA_SOL_SOURCES, userAddr, totalsByMint);
-          } catch {
-            // swallow per-tx errors
-          }
-        })
-      )
+    // Try indexer_cursor for the FEES wallet if present
+    const [cursorRows] = await pool.execute(
+      `SELECT updated_at FROM indexer_cursor ${FEES_WALLET ? "WHERE source_wallet = ?" : ""} LIMIT 1`,
+      FEES_WALLET ? [FEES_WALLET] : []
     );
+    if (cursorRows.length > 0) {
+      lastUpdatedISO = asISO(cursorRows[0].updated_at);
+    }
 
-    // 5) Shape response
-    const items = Object.entries(totalsByMint).map(([mint, amount]) => ({
-      mint,
-      symbol: SYMBOLS[mint] || null,
-      amount,
-    }));
+    // Fallback to the wallet-specific last_updated if cursor missing
+    if (!lastUpdatedISO) {
+      // max of wallet totals + token totals for this address
+      const [maxRows] = await pool.execute(
+        `SELECT GREATEST(
+            IFNULL((SELECT UNIX_TIMESTAMP(MAX(last_updated)) FROM rewards_totals WHERE wallet = ?), 0),
+            IFNULL((SELECT UNIX_TIMESTAMP(MAX(last_updated)) FROM rewards_token_totals WHERE wallet = ?), 0)
+          ) AS max_unix`,
+        [address, address]
+      );
+      const unix = maxRows?.[0]?.max_unix;
+      if (unix && Number(unix) > 0) {
+        lastUpdatedISO = new Date(Number(unix) * 1000).toISOString();
+      } else {
+        lastUpdatedISO = walletLastUpdated || null;
+      }
+    }
 
     return res.json({
-      address: userAddr,
+      address,
       items,
-      scannedTxCount: signatures.length,
-      lastSignatureScanned: lastSig,
-      lastUpdatedISO: new Date().toISOString(),
+      lastUpdatedISO,
     });
-  } catch (e) {
-    console.error("[earnings] error:", e);
-    return res.status(500).json({ error: "Failed to load earnings" });
+  } catch (err) {
+    console.error("getEarningsTotals error:", err);
+    return res.status(500).json({ error: "Internal error" });
   }
 };
 
-module.exports = { getEarningsByWalletAddress };
+/**
+ * GET /api/earnings/history?address=...&page=1&pageSize=50
+ * Returns: { address, page, pageSize, total, events: [{signature, slot, blockTimeISO, assetType, tokenMint, amount}] }
+ * - Paginates rewards_events for the wallet, most-recent first.
+ */
+exports.getEarningsHistory = async (req, res) => {
+  try {
+    const address = String(req.query.address || "").trim();
+    if (!isNonEmptyString(address)) {
+      return res.status(400).json({ error: "Missing ?address" });
+    }
+
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const pageSize = Math.min(Math.max(parseInt(req.query.pageSize || "50", 10), 1), 200);
+    const offset = (page - 1) * pageSize;
+
+    const pool = await getPool();
+
+    // Count total events for pagination
+    const [countRows] = await pool.execute(
+      `SELECT COUNT(*) AS c FROM rewards_events WHERE wallet = ?`,
+      [address]
+    );
+    const total = Number(countRows[0]?.c || 0);
+
+    // Fetch page of events
+    const [rows] = await pool.execute(
+      `SELECT signature, slot, block_time, asset_type, token_mint, amount
+       FROM rewards_events
+       WHERE wallet = ?
+       ORDER BY block_time DESC, slot DESC
+       LIMIT ? OFFSET ?`,
+      [address, pageSize, offset]
+    );
+
+    const events = rows.map((r) => ({
+      signature: r.signature,
+      slot: Number(r.slot),
+      blockTimeISO: asISO(r.block_time),
+      assetType: r.asset_type, // 'SOL' | 'SPL'
+      tokenMint: r.token_mint || null,
+      amount: Number(r.amount || 0),
+    }));
+
+    return res.json({
+      address,
+      page,
+      pageSize,
+      total,
+      events,
+    });
+  } catch (err) {
+    console.error("getEarningsHistory error:", err);
+    return res.status(500).json({ error: "Internal error" });
+  }
+};
+
+/**
+ * GET /api/earnings/leaderboard?asset=SOL|USDC|<mint>&limit=50&from=ISO&to=ISO
+ * Returns: { asset, from, to, rows: [{wallet, amount}] }
+ * - By default, lifetime totals:
+ *   - SOL/USDC from rewards_totals
+ *   - Other tokens from rewards_token_totals by token_mint
+ * - If from/to provided, computes from rewards_events within the time window.
+ */
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const asset = String(req.query.asset || "").trim(); // 'SOL', 'USDC', or token mint
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 200);
+    const fromISO = req.query.from ? String(req.query.from) : null;
+    const toISO = req.query.to ? String(req.query.to) : null;
+
+    if (!isNonEmptyString(asset)) {
+      return res.status(400).json({ error: "Missing ?asset (use SOL, USDC, or a token mint)" });
+    }
+
+    const pool = await getPool();
+
+    // Time-bounded leaderboard → compute from events
+    if (fromISO || toISO) {
+      const where = ["asset_type = ?"];
+      const params = [];
+
+      if (asset.toUpperCase() === "SOL") {
+        params.push("SOL");
+        where.push("token_mint IS NULL");
+      } else if (asset.toUpperCase() === "USDC") {
+        params.push("SPL");
+        where.push("token_mint IS NOT NULL");
+        // If you want to strictly enforce USDC mint, specify it here:
+        // where.push("token_mint = ?");
+        // params.push("<USDC_MINT>");
+      } else {
+        // specific token mint
+        params.push("SPL");
+        where.push("token_mint = ?");
+        params.push(asset);
+      }
+
+      if (fromISO) {
+        where.push("block_time >= ?");
+        params.push(new Date(fromISO));
+      }
+      if (toISO) {
+        where.push("block_time < ?");
+        params.push(new Date(toISO));
+      }
+
+      const sql = `
+        SELECT wallet, SUM(amount) AS total
+        FROM rewards_events
+        WHERE ${where.join(" AND ")}
+        GROUP BY wallet
+        ORDER BY total DESC
+        LIMIT ?
+      `;
+      params.push(limit);
+
+      const [rows] = await pool.execute(sql, params);
+      return res.json({
+        asset,
+        from: fromISO || null,
+        to: toISO || null,
+        rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) })),
+      });
+    }
+
+    // Lifetime leaderboard → read from totals tables
+    if (asset.toUpperCase() === "SOL") {
+      const [rows] = await pool.execute(
+        `SELECT wallet, sol_total AS total
+         FROM rewards_totals
+         WHERE sol_total IS NOT NULL AND sol_total <> 0
+         ORDER BY total DESC
+         LIMIT ?`,
+        [limit]
+      );
+      return res.json({
+        asset: "SOL",
+        from: null,
+        to: null,
+        rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) })),
+      });
+    }
+
+    if (asset.toUpperCase() === "USDC") {
+      const [rows] = await pool.execute(
+        `SELECT wallet, usdc_total AS total
+         FROM rewards_totals
+         WHERE usdc_total IS NOT NULL AND usdc_total <> 0
+         ORDER BY total DESC
+         LIMIT ?`,
+        [limit]
+      );
+      return res.json({
+        asset: "USDC",
+        from: null,
+        to: null,
+        rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) })),
+      });
+    }
+
+    // Specific token mint lifetime board
+    const [rows] = await pool.execute(
+      `SELECT wallet, total_amount AS total
+       FROM rewards_token_totals
+       WHERE token_mint = ?
+       ORDER BY total DESC
+       LIMIT ?`,
+      [asset, limit]
+    );
+    return res.json({
+      asset,
+      from: null,
+      to: null,
+      rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) })),
+    });
+  } catch (err) {
+    console.error("getLeaderboard error:", err);
+    return res.status(500).json({ error: "Internal error" });
+  }
+};
+
+/**
+ * GET /api/earnings/status
+ * Returns: { sourceWallet, lastSignature, lastSlot, lastUpdatedISO }
+ * - Exposes the indexer's watermark for ops/observability.
+ */
+exports.getIndexerStatus = async (_req, res) => {
+  try {
+    const pool = await getPool();
+    const [rows] = await pool.execute(
+      `SELECT source_wallet, last_signature, last_slot, updated_at
+       FROM indexer_cursor
+       ${FEES_WALLET ? "WHERE source_wallet = ?" : ""}
+       ORDER BY updated_at DESC
+       LIMIT 1`,
+      FEES_WALLET ? [FEES_WALLET] : []
+    );
+
+    if (rows.length === 0) {
+      return res.json({
+        sourceWallet: FEES_WALLET || null,
+        lastSignature: null,
+        lastSlot: null,
+        lastUpdatedISO: null,
+      });
+    }
+
+    const r = rows[0];
+    return res.json({
+      sourceWallet: r.source_wallet,
+      lastSignature: r.last_signature || null,
+      lastSlot: r.last_slot != null ? Number(r.last_slot) : null,
+      lastUpdatedISO: asISO(r.updated_at),
+    });
+  } catch (err) {
+    console.error("getIndexerStatus error:", err);
+    return res.status(500).json({ error: "Internal error" });
+  }
+};
