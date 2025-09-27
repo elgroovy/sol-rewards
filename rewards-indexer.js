@@ -253,6 +253,10 @@ export function extractRewards(tx) {
       if (tt.fromUserAccount !== DISTRIBUTOR_WALLET) continue;
       if (!tt.toUserAccount || !(tt.tokenAmount > 0)) continue;
 
+      // Skip off-curve destinations (e.g. temp accounts / PDAs).
+      // This will skip Jupiter Aggregator swap transactions and similar things
+      if (!isOnCurveAddress(tt.toUserAccount)) continue;
+
       out.push({
         signature,
         slot,
