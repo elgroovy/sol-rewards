@@ -1,10 +1,14 @@
-const express = require('express');
+import express from "express";
+import {
+  notify,
+  updateEligibleHolders,
+  getEligibleHolders,
+} from "../controllers/jackpotController.js";
+
 const router = express.Router();
-const jackpotController = require('../controllers/jackpotController');
 
-router.post('/notifications', jackpotController.notify);
-router.put('/holders', jackpotController.updateEligibleHolders);
-router.get('/holders', jackpotController.getEligibleHolders);
-router.get('/test', jackpotController.test);
+router.post("/notifications", notify);
+router.put("/holders", updateEligibleHolders);
+router.get("/holders", getEligibleHolders);
 
-module.exports = router;
+export default router;

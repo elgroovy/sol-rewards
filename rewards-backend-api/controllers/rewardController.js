@@ -1,4 +1,4 @@
-const TelegramBot = require('node-telegram-bot-api');
+import TelegramBot from 'node-telegram-bot-api';
 
 const token = '7665493064:AAE5oXMgvUFp3x6tDzQEVSygelEVYavDWDQ';
 const chatId = -1002333200183;
@@ -23,7 +23,7 @@ curl -X POST http://localhost:3000/api/rewards/notify \
 */
 
 // Sends notifications to the Telegram bot
-const notify = async (req, res) => {
+export async function notify(req, res) {
     const { messageType, wallets, transactionUrl } = req.body;
 
     if (!messageType || !wallets || !Array.isArray(wallets) || !transactionUrl) {
@@ -70,8 +70,4 @@ const notify = async (req, res) => {
         console.error('Error sending GIF and message to Telegram bot:', error);
         res.status(500).send({ success: false, error: 'Failed to send GIF and message to Telegram bot.' });
     });
-};
-
-module.exports = {
-    notify
-};
+}

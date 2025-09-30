@@ -1,7 +1,10 @@
-const express = require('express');
+import express from 'express';
+import {
+  getTokenMetrics
+} from '../controllers/tokenMetricsController.js';
+
 const router = express.Router();
-const tokenDataController = require('../controllers/tokenMetricsController');
 
-router.get('/', tokenDataController.getTokenMetrics);
+router.get('/', getTokenMetrics);
 
-module.exports = router;
+export default router;

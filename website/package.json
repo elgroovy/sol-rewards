@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "type": "module",
   "dependencies": {
     "postcss": "^8.5.6",
     "react": "^19.1.1",

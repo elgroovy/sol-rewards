@@ -1,6 +1,5 @@
-const db = require('../../db');
-
-const TelegramBot = require('node-telegram-bot-api');
+import * as db from "../../db.js";
+import TelegramBot from 'node-telegram-bot-api';
 
 const token = '8035972978:AAGzSnyLoerRufDc2ZpSdTqZzLc4Su3vLMM';
 const chatId = -1002333200183;
@@ -35,7 +34,7 @@ curl -X POST http://localhost:3000/api/jackpots/notify \
 */
 
 // Sends notifications to the Telegram bot
-const notify = async (req, res) => {
+export async function notify(req, res) {
 
     const messageType = req.body.messageType;
 
@@ -78,11 +77,7 @@ const notify = async (req, res) => {
     });
 }
 
-async function test(req, res) {
-    res.status(200).send("<h1>Hello, from Jackpot!</h1>");
-}
-
-async function getEligibleHolders(req, res) {
+export async function getEligibleHolders(req, res) {
     try {
         const [rows] = await db.query('SELECT wallet_address FROM eligible_holders');
         const holders = rows.map(row => row.wallet_address); // Extract only the wallet_address values
@@ -90,9 +85,9 @@ async function getEligibleHolders(req, res) {
     } catch (err) {
         res.status(500).json({ message: 'Database error', error: err });
     }
-};
+}
 
-async function updateEligibleHolders(req, res) {
+export async function updateEligibleHolders(req, res) {
     const snapshotAddresses = req.body.addresses;
 
     if (!snapshotAddresses || !Array.isArray(snapshotAddresses)) {
@@ -134,10 +129,3 @@ async function updateEligibleHolders(req, res) {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
-
-module.exports = {
-    notify,
-    getEligibleHolders,
-    updateEligibleHolders,
-    test
-};

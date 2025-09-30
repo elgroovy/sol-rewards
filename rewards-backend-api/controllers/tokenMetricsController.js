@@ -1,10 +1,10 @@
-const { Connection, PublicKey } = require('@solana/web3.js');
-const { Constants } = require('../../constants');
-const fetch = require('node-fetch');
+import { Connection, PublicKey } from '@solana/web3.js';
+import { Constants } from '../../constants.js';
+import fetch from 'node-fetch';
 
 const DEXSCREENER_API_URL = "https://api.dexscreener.com/latest/dex/pairs/solana/2hDES5rJLmoANB9HjSKffFx62pCiqRfi5Q86cPTCkJeF";
 
-const getTokenMetrics = async (req, res) => {
+export async function getTokenMetrics(req, res) {
     try {
         const connection = new Connection(Constants.kHeliusRPCEndpoint);
         const tokenMintPublicKey = new PublicKey(Constants.kTokenMintPubkey);
@@ -49,8 +49,4 @@ const getTokenMetrics = async (req, res) => {
         console.error("Error fetching token data:", error);
         res.status(500).json({ success: false, error: "Failed to fetch token data." });
     }
-};
-
-module.exports = {
-    getTokenMetrics
-};
+}

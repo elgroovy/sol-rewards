@@ -1,7 +1,10 @@
-const express = require('express');
+import express from "express";
+import {
+  notify
+} from "../controllers/rewardController.js";
+
 const router = express.Router();
-const rewardController = require('../controllers/rewardController');
 
-router.post('/notifications', rewardController.notify);
+router.post("/notifications", notify);
 
-module.exports = router;
+export default router;

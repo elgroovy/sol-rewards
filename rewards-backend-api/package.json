@@ -2,6 +2,7 @@
   "name": "rewards-backend-api",
   "version": "1.0.0",
   "description": "Backend API for the rewards infrastructure",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
