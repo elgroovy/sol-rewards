@@ -1,6 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Constants } from "../../../constants.js";
-
 /**
  * RewardsCalculatorModal
  * - Calculator tab: numeric formatting, quick-sets, simulated volume, live fetch.
@@ -218,12 +217,6 @@ export default function RewardsCalculatorModal({
     return Number(x?.amount || 0);
   }, [earnings]);
 
-  const totalUSDFromUSDC = useMemo(() => {
-    const items = earnings?.items || [];
-    const usdc = items.filter((i) => (i.symbol || "").toUpperCase() === "USDC");
-    return usdc.reduce((s, x) => s + Number(x.amount || 0), 0);
-  }, [earnings]);
-
   const otherTokens = useMemo(() => {
     const items = earnings?.items || [];
     return items.filter(
@@ -237,6 +230,19 @@ export default function RewardsCalculatorModal({
   const [eventsTotal, setEventsTotal] = useState(0);
   const [eventsPage, setEventsPage] = useState(1);
   const [eventsLoading, setEventsLoading] = useState(false);
+
+  // scroll management for recent events
+  const eventsScrollRef = useRef(null);
+  const prevEventsLenRef = useRef(0);
+  useEffect(() => {
+    // auto-scroll to newest rows when loading more pages
+    if (events.length > prevEventsLenRef.current && eventsPage > 1) {
+      if (eventsScrollRef.current) {
+        eventsScrollRef.current.scrollTop = eventsScrollRef.current.scrollHeight;
+      }
+    }
+    prevEventsLenRef.current = events.length;
+  }, [events, eventsPage]);
 
   const loadHistory = async (address, page = 1) => {
     if (!apiBase) {
@@ -353,7 +359,7 @@ export default function RewardsCalculatorModal({
                 view === "wallet" ? "bg-white/25 font-semibold" : "text-white/80 hover:bg-white/15"
               }`}
             >
-              My earnings
+              My Earnings
             </button>
           </div>
         </div>
@@ -366,7 +372,7 @@ export default function RewardsCalculatorModal({
               <label className="block text-sm text-white/70 mb-2">
                 Your TRT Holdings{" "}
                 <span className="text-emerald-400/80">
-                  ({(pctOfSupply * 100 || 0).toFixed(5)}%)
+                  ({(pctOfSupply * 100 || 0).toFixed(2)}%)
                 </span>
               </label>
               <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
@@ -506,11 +512,11 @@ export default function RewardsCalculatorModal({
                 )}
               </div>
 
-              {/* right: totals summary (two cards side by side as in mockup) */}
+              {/* right: totals summary (two cards side by side) */}
               <div className="grid sm:grid-cols-2 gap-4">
                 <NeonCard
                   title="TOTAL SOL"
-                  value={solTotal.toLocaleString(undefined, { maximumFractionDigits: 9 })}
+                  value={solTotal.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                 />
                 <NeonCard
                   title="TOTAL USDC"
@@ -518,7 +524,7 @@ export default function RewardsCalculatorModal({
                 />
                 <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-black/30 p-4">
                   <div className="text-xs uppercase tracking-wide text-white/70 mb-2">
-                    Per-asset totals (raw)
+                    Per-asset totals
                   </div>
                   <div className="space-y-1 text-sm">
                     {(earnings?.items || []).length === 0 ? (
@@ -543,14 +549,18 @@ export default function RewardsCalculatorModal({
               </div>
             </div>
 
-            {/* Recent events (optional table) */}
+            {/* Recent events (fixed-height, scrollable) */}
             <div className="mt-6 rounded-2xl border border-white/10 bg-black/25 p-4">
               <div className="text-xs uppercase tracking-wide text-white/70 mb-3">
                 Recent events
               </div>
-              <div className="overflow-x-auto">
+              <div
+                ref={eventsScrollRef}
+                style={{ maxHeight: 220, overflowY: "auto" }}
+                className="overflow-x-auto"
+              >
                 <table className="w-full text-sm">
-                  <thead className="text-white/60">
+                  <thead className="text-white/60 sticky top-0 bg-black/40 backdrop-blur">
                     <tr className="text-left">
                       <th className="py-2 pr-3 font-medium">Time</th>
                       <th className="py-2 pr-3 font-medium">Asset</th>
@@ -623,9 +633,9 @@ export default function RewardsCalculatorModal({
           </>
         )}
 
-        {/* footer actions */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          {view === "calc" ? (
+        {/* footer actions — present ONLY for Calculator tab (unchanged) */}
+        {view === "calc" && (
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               type="button"
               onClick={fetchLive}
@@ -641,22 +651,18 @@ export default function RewardsCalculatorModal({
               {status === "loading"
                 ? "Connecting…"
                 : useLive
-                ? "Refresh live data"
-                : "Refresh live data"}
+                ? "Refresh Live Data"
+                : "Refresh Live Data"}
             </button>
-          ) : (
-            <div className="rounded-2xl px-5 py-3 border border-white/15 bg-white/10 text-left text-sm opacity-80">
-              Enter an address and press Check.
-            </div>
-          )}
 
-          <button
-            onClick={onClose}
-            className="rounded-2xl px-5 py-3 border border-white/20 bg-white/10 hover:bg-white/15 transition font-semibold"
-          >
-            Close
-          </button>
-        </div>
+            <button
+              onClick={onClose}
+              className="rounded-2xl px-5 py-3 border border-white/20 bg-white/10 hover:bg-white/15 transition font-semibold"
+            >
+              Close
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
