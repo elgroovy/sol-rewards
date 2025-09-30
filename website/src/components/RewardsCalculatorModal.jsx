@@ -309,10 +309,16 @@ export default function RewardsCalculatorModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] grid place-items-center px-4"
+      className="fixed inset-0 z-[60] flex items-start justify-center px-4 overflow-y-auto overscroll-contain"
       style={{
         background: "rgba(4,8,16,0.45)",
         backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        // safe vertical padding for small screens + iOS safe areas
+        paddingTop: "1.25rem",
+        paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
+        // ensure at least viewport height so centering behaves
+        minHeight: "100dvh",
       }}
       role="dialog"
       aria-modal="true"
@@ -321,7 +327,7 @@ export default function RewardsCalculatorModal({
       <div
         className="relative w-full max-w-4xl rounded-[28px] p-6 md:p-8 border shadow-[0_30px_80px_rgba(0,0,0,.45)] backdrop-blur-xl"
         style={{
-          overflow: "hidden",
+          overflow: "auto", // allow panel content to scroll on small screens
           borderColor: "rgba(255,255,255,0.22)",
           background:
             "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06))",
@@ -329,6 +335,8 @@ export default function RewardsCalculatorModal({
           backdropFilter: "blur(14px) saturate(140%)",
           boxShadow:
             "inset 0 0 0 1px rgba(255,255,255,0.08), 0 30px 80px rgba(0,0,0,0.45)",
+          // cap height so the close button and content are reachable. The div itself scrolls
+          maxHeight: "calc(100dvh - 2.5rem)",
         }}
       >
         {/* close */}

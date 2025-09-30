@@ -21,13 +21,13 @@ export default function Fees() {
             text="FEE STRUCTURE"
             tvSelector="#tv-case"
             onUnlock={() => console.log("TRT unlocked")}
-            className="text-5xl md:text-6xl font-extrabold tracking-[.08em]"
+            className="text-4xl md:text-6xl font-extrabold tracking-[.08em]"
           />
         </div>
 
         <div className="mt-10">
           {/* TV stays centered; allow content to spill on the right for the button */}
-          <div id="tv-case" className="relative w-[600px] mx-auto overflow-visible">
+          <div id="tv-case" className="relative mx-auto overflow-visible w-full max-w-[92vw] md:w-[600px]">
             {/* Screen area inside the frame */}
             <div
               className="absolute"
@@ -45,7 +45,7 @@ export default function Fees() {
 
             {/* ONE button, pinned to the TV’s right edge */}
             <div
-              className="absolute top-[10%] z-20"
+              className="md:absolute md:top-[10%] z-20 mt-4 md:mt-0 flex md:block justify-center"
               style={{ left: "calc(100% + 24px)" }} // 24px gap from TV
             >
               <button
