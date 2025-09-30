@@ -9,15 +9,15 @@ import {
 const router = express.Router();
 
 // Totals for a wallet (SOL, USDC, other tokens) + lastUpdated watermark
-router.get("/earnings", getEarningsTotals);
+router.get("/", getEarningsTotals);
 
 // Paginated payout history for a wallet (timeline/audit)
-router.get("/earnings/history", getEarningsHistory);
+router.get("/history", getEarningsHistory);
 
 // Leaderboard by asset (SOL/USDC/by token mint), optional time window
-router.get("/earnings/leaderboard", getLeaderboard);
+router.get("/leaderboard", getLeaderboard);
 
 // Indexer/status (last cursor + watermark)
-router.get("/earnings/status", getIndexerStatus);
+router.get("/status", getIndexerStatus);
 
 export default router;

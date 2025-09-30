@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
+import { Constants } from "../../../constants.js";
 
 /**
  * RewardsCalculatorModal
  * - Calculator tab: numeric formatting, quick-sets, simulated volume, live fetch.
- * - My earnings tab: address lookup with optional full-history scan + progress UI.
+ * - My earnings tab: address lookup (DB-backed).
  *
  * Props:
  *   open: boolean
@@ -25,8 +26,6 @@ const DEMO_EARNINGS = {
     { mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", symbol: "USDC", amount: 2580.11 },
     { mint: "So11111111111111111111111111111111111111112", symbol: "SOL", amount: 1.2345 },
   ],
-  scannedTxCount: 150,
-  lastSignatureScanned: null,
   lastUpdatedISO: new Date().toISOString(),
 };
 
@@ -108,7 +107,7 @@ function Meta({ label, value }) {
 export default function RewardsCalculatorModal({
   open,
   onClose,
-  apiBase = "http://localhost:3000", // Constants.kBackendUrl,
+  apiBase = Constants.kBackendUrl,
   defaultUseLive = false,
 }) {
   const [view, setView] = useState("calc"); // 'calc' | 'wallet'
@@ -197,30 +196,71 @@ export default function RewardsCalculatorModal({
   };
 
   // fetch once when modal opens
-useEffect(() => {
-  if (open) {
-    fetchLive();
-  }
-}, [open]);
+  useEffect(() => {
+    if (open) {
+      fetchLive();
+    }
+  }, [open]);
 
-  // ---------- Wallet / My Earnings ----------
+  // ---------- Wallet / My Earnings (DB-backed; no scan/progress) ----------
   const [addr, setAddr] = useState("");
   const [earnings, setEarnings] = useState(null);
-  const [earnStatus, setEarnStatus] = useState("idle"); // idle | loading | scanning | ok | error
-  const [scanAll, setScanAll] = useState(false);
+  const [earnLoading, setEarnLoading] = useState(false);
+  const [earnError, setEarnError] = useState("");
 
-  const [pagesScanned, setPagesScanned] = useState(0);
-  const [txScanned, setTxScanned] = useState(0);
-  const [lastSig, setLastSig] = useState(null);
-  const abortRef = useRef(false);
+  // totals for cards
+  const solTotal = useMemo(() => {
+    const x = (earnings?.items || []).find((i) => (i.symbol || "").toUpperCase() === "SOL");
+    return Number(x?.amount || 0);
+  }, [earnings]);
+  const usdcTotal = useMemo(() => {
+    const x = (earnings?.items || []).find((i) => (i.symbol || "").toUpperCase() === "USDC");
+    return Number(x?.amount || 0);
+  }, [earnings]);
 
-  const PAGE_LIMIT = 200;  // tx per backend call
-  const MAX_PAGES = 100;   // safe cap; progress uses this as denominator
+  const totalUSDFromUSDC = useMemo(() => {
+    const items = earnings?.items || [];
+    const usdc = items.filter((i) => (i.symbol || "").toUpperCase() === "USDC");
+    return usdc.reduce((s, x) => s + Number(x.amount || 0), 0);
+  }, [earnings]);
 
-  const addItemsInto = (acc, items) => {
-    for (const it of items || []) {
-      const key = it.mint || it.symbol || "UNKNOWN";
-      acc[key] = (acc[key] || 0) + Number(it.amount || 0);
+  const otherTokens = useMemo(() => {
+    const items = earnings?.items || [];
+    return items.filter(
+      (i) => (i.symbol || "").toUpperCase() !== "USDC" && (i.symbol || "").toUpperCase() !== "SOL"
+    );
+  }, [earnings]);
+
+  // recent events state
+  const EVENTS_PAGE_SIZE = 10;
+  const [events, setEvents] = useState([]);
+  const [eventsTotal, setEventsTotal] = useState(0);
+  const [eventsPage, setEventsPage] = useState(1);
+  const [eventsLoading, setEventsLoading] = useState(false);
+
+  const loadHistory = async (address, page = 1) => {
+    if (!apiBase) {
+      setEvents([]);
+      setEventsTotal(0);
+      setEventsPage(1);
+      return;
+    }
+    setEventsLoading(true);
+    try {
+      const url = new URL(`${apiBase}/api/earnings/history`);
+      url.searchParams.set("address", address);
+      url.searchParams.set("page", String(page));
+      url.searchParams.set("pageSize", String(EVENTS_PAGE_SIZE));
+      const r = await fetch(url.toString(), { cache: "no-store" });
+      if (!r.ok) throw new Error("history fetch failed");
+      const j = await r.json();
+      setEvents(page === 1 ? j.events || [] : [...events, ...(j.events || [])]);
+      setEventsTotal(Number(j.total || 0));
+      setEventsPage(Number(j.page || page));
+    } catch (_e) {
+      // keep quiet in UI; recent events are optional
+    } finally {
+      setEventsLoading(false);
     }
   };
 
@@ -228,102 +268,36 @@ useEffect(() => {
     const a = addr.trim();
     if (!a) return;
 
-    if (!apiBase) {
-      setEarnings(DEMO_EARNINGS);
-      setEarnStatus("ok");
-      return;
-    }
-
-    abortRef.current = false;
-    setPagesScanned(0);
-    setTxScanned(0);
-    setLastSig(null);
-
-    if (!scanAll) {
-      setEarnStatus("loading");
-      try {
-        const url = new URL(`${apiBase}/api/earnings`);
-        url.searchParams.set("address", a);
-        url.searchParams.set("limit", String(PAGE_LIMIT));
-        const r = await fetch(url.toString(), { cache: "no-store" });
-        const j = await r.json();
-        setEarnings(j);
-        setPagesScanned(1);
-        setTxScanned(j.scannedTxCount || 0);
-        setLastSig(j.lastSignatureScanned || null);
-        setEarnStatus("ok");
-      } catch {
-        setEarnStatus("error");
-      }
-      return;
-    }
-
-    // Scan all history (paginated)
-    setEarnStatus("scanning");
+    setEarnLoading(true);
+    setEarnError("");
     try {
-      let before = undefined;
-      let page = 0;
-      let more = true;
-
-      const mintTotals = {};
-      let totalScanned = 0;
-      let lastSeenSig = null;
-
-      while (more && page < MAX_PAGES && !abortRef.current) {
-        page += 1;
-        const url = new URL(`${apiBase}/api/earnings`);
-        url.searchParams.set("address", a);
-        url.searchParams.set("limit", String(PAGE_LIMIT));
-        if (before) url.searchParams.set("before", before);
-
-        const r = await fetch(url.toString(), { cache: "no-store" });
-        if (!r.ok) throw new Error("backend error");
-        const j = await r.json();
-
-        addItemsInto(mintTotals, j.items);
-        totalScanned += j.scannedTxCount || 0;
-        lastSeenSig = j.lastSignatureScanned || null;
-
-        setPagesScanned(page);
-        setTxScanned(totalScanned);
-        setLastSig(lastSeenSig);
-
-        if (!lastSeenSig || (j.scannedTxCount || 0) === 0) {
-          more = false;
-        } else {
-          before = lastSeenSig;
-        }
+      if (!apiBase) {
+        setEarnings(DEMO_EARNINGS);
+        setEarnLoading(false);
+        // demo: no history
+        setEvents([]);
+        setEventsTotal(0);
+        setEventsPage(1);
+        return;
       }
-
-      const items = Object.entries(mintTotals).map(([mint, amount]) => ({
-        mint,
-        symbol: mint.length === 44 ? null : mint,
-        amount,
-      }));
-
-      setEarnings({
-        address: a,
-        items,
-        scannedTxCount: totalScanned,
-        lastSignatureScanned: lastSeenSig,
-        lastUpdatedISO: new Date().toISOString(),
-      });
-
-      setEarnStatus(abortRef.current ? "idle" : "ok");
-    } catch {
-      setEarnStatus("error");
+      const url = new URL(`${apiBase}/api/earnings`);
+      url.searchParams.set("address", a);
+      const r = await fetch(url.toString(), { cache: "no-store" });
+      if (!r.ok) throw new Error("earnings fetch failed");
+      const j = await r.json();
+      setEarnings(j);
+      // load recent events (page 1)
+      loadHistory(a, 1);
+    } catch (e) {
+      setEarnings(null);
+      setEarnError("Couldn’t load earnings for this address.");
+      setEvents([]);
+      setEventsTotal(0);
+      setEventsPage(1);
+    } finally {
+      setEarnLoading(false);
     }
   };
-
-  const cancelScan = () => {
-    abortRef.current = true;
-  };
-
-  const totalUSDFromUSDC = useMemo(() => {
-    const items = earnings?.items || [];
-    const usdc = items.filter((i) => (i.symbol || "").toUpperCase() === "USDC");
-    return usdc.reduce((s, x) => s + Number(x.amount || 0), 0);
-  }, [earnings]);
 
   if (!open) return null;
 
@@ -488,133 +462,165 @@ useEffect(() => {
             </div>
           </div>
         ) : (
-          // ---------------- MY EARNINGS ----------------
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* left: address + controls */}
-            <div className="rounded-2xl border border-white/15 bg-black/30 p-4 md:p-5">
-              <label className="block text-sm text-white/70 mb-2">Your wallet address</label>
-              <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
-                <input
-                  type="text"
-                  value={addr}
-                  onChange={(e) => setAddr(e.target.value)}
-                  placeholder="Enter your address"
-                  className="w-full bg-transparent outline-none placeholder:text-white/30"
-                />
-                <button
-                  onClick={checkEarnings}
-                  disabled={earnStatus === "loading" || earnStatus === "scanning" || !addr.trim()}
-                  className="shrink-0 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm hover:bg-white/15 disabled:opacity-50"
-                >
-                  {earnStatus === "scanning"
-                    ? "Scanning…"
-                    : earnStatus === "loading"
-                    ? "Checking…"
-                    : "Check"}
-                </button>
+          // ---------------- MY EARNINGS (DB-backed) ----------------
+          <>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* left: address + meta */}
+              <div className="rounded-2xl border border-white/15 bg-black/30 p-4 md:p-5">
+                <label className="block text-sm text-white/70 mb-2">Your wallet address</label>
+                <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
+                  <input
+                    type="text"
+                    value={addr}
+                    onChange={(e) => setAddr(e.target.value)}
+                    placeholder="Enter your address"
+                    className="w-full bg-transparent outline-none placeholder:text-white/30"
+                  />
+                  <button
+                    onClick={checkEarnings}
+                    disabled={earnLoading || !addr.trim()}
+                    className="shrink-0 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm hover:bg-white/15 disabled:opacity-50"
+                  >
+                    {earnLoading ? "Checking…" : "Check"}
+                  </button>
+                </div>
+
+                {/* meta */}
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <Meta
+                    label="Last updated"
+                    value={
+                      earnings?.lastUpdatedISO
+                        ? new Date(earnings.lastUpdatedISO).toLocaleString()
+                        : "—"
+                    }
+                  />
+                  <Meta
+                    label="Address"
+                    value={addr ? `${addr.slice(0, 4)}…${addr.slice(-4)}` : "—"}
+                  />
+                </div>
+
+                {earnError && (
+                  <div className="mt-3 text-sm text-red-300">{earnError}</div>
+                )}
               </div>
 
-              {/* scan-all toggle */}
-              <div className="mt-3 flex items-center gap-2">
-                <input
-                  id="scanAll"
-                  type="checkbox"
-                  checked={scanAll}
-                  onChange={(e) => setScanAll(e.target.checked)}
-                  className="h-4 w-4 rounded border-white/25 bg-black/40"
+              {/* right: totals summary (two cards side by side as in mockup) */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <NeonCard
+                  title="TOTAL SOL"
+                  value={solTotal.toLocaleString(undefined, { maximumFractionDigits: 9 })}
                 />
-                <label htmlFor="scanAll" className="text-sm opacity-80">
-                  Scan all history (slower)
-                </label>
-              </div>
-
-              {/* progress UI (kept for earnings scan) */}
-              {(earnStatus === "scanning" || earnStatus === "loading") && (
-                <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="opacity-80">
-                      {earnStatus === "scanning" ? "Scanning pages…" : "Fetching…"}
-                    </span>
-                    <button
-                      onClick={cancelScan}
-                      disabled={earnStatus !== "scanning"}
-                      className="text-xs rounded-md border border-white/20 px-2 py-1 bg-white/10 hover:bg-white/15 disabled:opacity-40"
-                    >
-                      Cancel
-                    </button>
+                <NeonCard
+                  title="TOTAL USDC"
+                  value={usdcTotal.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                />
+                <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <div className="text-xs uppercase tracking-wide text-white/70 mb-2">
+                    Per-asset totals (raw)
                   </div>
-
-                  <div className="mt-2 h-2 w-full rounded-full bg-white/10 overflow-hidden">
-                    {earnStatus === "scanning" ? (
-                      <div
-                        className="h-full bg-white/60"
-                        style={{
-                          width: `${Math.min(100, (pagesScanned / MAX_PAGES) * 100)}%`,
-                          transition: "width 200ms linear",
-                        }}
-                      />
+                  <div className="space-y-1 text-sm">
+                    {(earnings?.items || []).length === 0 ? (
+                      <div className="opacity-60">—</div>
                     ) : (
-                      <div className="h-full w-1/3 bg-white/60 animate-pulse" />
+                      (earnings?.items || []).map((i, idx) => (
+                        <div key={`${i.mint || i.symbol || idx}`} className="flex justify-between">
+                          <span className="opacity-80">
+                            {i.symbol ||
+                              (i.mint ? i.mint.slice(0, 4) + "…" + i.mint.slice(-4) : "—")}
+                          </span>
+                          <span className="font-medium">
+                            {Number(i.amount || 0).toLocaleString(undefined, {
+                              maximumFractionDigits: 9,
+                            })}
+                          </span>
+                        </div>
+                      ))
                     )}
                   </div>
-
-                  <div className="mt-2 text-xs opacity-75">
-                    <div>Pages scanned: {pagesScanned} / {MAX_PAGES}</div>
-                    <div>Signatures scanned: {txScanned.toLocaleString()}</div>
-                    {lastSig && (
-                      <div className="truncate">
-                        Last cursor: <span className="opacity-60">{lastSig}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* meta */}
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <Meta
-                  label="Last updated"
-                  value={
-                    earnings?.lastUpdatedISO
-                      ? new Date(earnings.lastUpdatedISO).toLocaleString()
-                      : "—"
-                  }
-                />
-                <Meta
-                  label="Address"
-                  value={addr ? `${addr.slice(0, 4)}…${addr.slice(-4)}` : "—"}
-                />
-              </div>
-
-              {earnStatus === "error" && (
-                <div className="mt-3 text-sm text-red-300">Couldn’t load earnings for this address.</div>
-              )}
-            </div>
-
-            {/* right: totals */}
-            <div className="grid gap-4">
-              <NeonCard title="TOTAL EARNED (USDC-like)" value={fmtUSD.format(totalUSDFromUSDC || 0)} />
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <div className="text-xs uppercase tracking-wide text-white/70 mb-2">
-                  Per-asset totals (raw)
-                </div>
-                <div className="space-y-1 text-sm">
-                  {(earnings?.items || []).length === 0 ? (
-                    <div className="opacity-60">—</div>
-                  ) : (
-                    (earnings?.items || []).map((i) => (
-                      <div key={i.mint} className="flex justify-between">
-                        <span className="opacity-80">
-                          {i.symbol || i.mint.slice(0, 4) + "…" + i.mint.slice(-4)}
-                        </span>
-                        <span className="font-medium">{Number(i.amount).toLocaleString()}</span>
-                      </div>
-                    ))
-                  )}
                 </div>
               </div>
             </div>
-          </div>
+
+            {/* Recent events (optional table) */}
+            <div className="mt-6 rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="text-xs uppercase tracking-wide text-white/70 mb-3">
+                Recent events
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-white/60">
+                    <tr className="text-left">
+                      <th className="py-2 pr-3 font-medium">Time</th>
+                      <th className="py-2 pr-3 font-medium">Asset</th>
+                      <th className="py-2 pr-3 font-medium">Amount</th>
+                      <th className="py-2 font-medium">Tx</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {events.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-3 text-white/60">
+                          —
+                        </td>
+                      </tr>
+                    ) : (
+                      events.map((ev) => {
+                        const when = ev.blockTimeISO
+                          ? new Date(ev.blockTimeISO).toLocaleString()
+                          : "—";
+                        const symbol =
+                          ev.assetType === "SOL"
+                            ? "SOL"
+                            : (earnings?.items || []).find((i) => i.mint === ev.tokenMint)?.symbol ||
+                              (ev.tokenMint ? ev.tokenMint.slice(0, 4) + "…" + ev.tokenMint.slice(-4) : "SPL");
+                        return (
+                          <tr key={`${ev.signature}-${ev.tokenMint || "SOL"}`} className="border-t border-white/5">
+                            <td className="py-2 pr-3">{when}</td>
+                            <td className="py-2 pr-3">{symbol}</td>
+                            <td className="py-2 pr-3">
+                              {Number(ev.amount || 0).toLocaleString(undefined, {
+                                maximumFractionDigits: 9,
+                              })}
+                            </td>
+                            <td className="py-2">
+                              {ev.signature ? (
+                                <a
+                                  className="text-cyan-300 hover:underline"
+                                  href={`https://solscan.io/tx/${ev.signature}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title={ev.signature}
+                                >
+                                  {ev.signature.slice(0, 6)}…{ev.signature.slice(-4)} ↗
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* load more */}
+              {eventsTotal > events.length && (
+                <div className="mt-3">
+                  <button
+                    className="rounded-xl px-3 py-1.5 border border-white/15 bg-white/10 hover:bg-white/15 text-sm disabled:opacity-50"
+                    disabled={eventsLoading}
+                    onClick={() => loadHistory(addr.trim(), eventsPage + 1)}
+                  >
+                    {eventsLoading ? "Loading…" : "Load more"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* footer actions */}
@@ -640,7 +646,7 @@ useEffect(() => {
             </button>
           ) : (
             <div className="rounded-2xl px-5 py-3 border border-white/15 bg-white/10 text-left text-sm opacity-80">
-              * Scanning paginates with a safe cap of 100 pages (~20000 signatures).
+              Enter an address and press Check.
             </div>
           )}
 

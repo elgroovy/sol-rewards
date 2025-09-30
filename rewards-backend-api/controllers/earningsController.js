@@ -7,38 +7,11 @@
  *     - indexer_cursor         (source_wallet, last_signature, last_slot, updated_at)
  */
 
-const mysql = require("mysql2/promise");
+import * as db from '../../db.js';
+import { Constants } from '../../constants.js';
 
-const {
-  MYSQL_HOST = "127.0.0.1",
-  MYSQL_PORT = "3306",
-  MYSQL_USER = "root",
-  MYSQL_PASSWORD = "",
-  MYSQL_DATABASE = "trt",
-  FEES_WALLET = "", // optional, used by /status; empty = first/only row in indexer_cursor
-} = process.env;
-
-let pool;
-async function getPool() {
-  if (!pool) {
-    pool = mysql.createPool({
-      host: MYSQL_HOST,
-      port: Number(MYSQL_PORT),
-      user: MYSQL_USER,
-      password: MYSQL_PASSWORD,
-      database: MYSQL_DATABASE,
-      waitForConnections: true,
-      connectionLimit: 10,
-      maxIdle: 10,
-      idleTimeout: 60000,
-      queueLimit: 0,
-      charset: "utf8mb4_general_ci",
-      supportBigNumbers: true,
-      dateStrings: true,
-    });
-  }
-  return pool;
-}
+const DISTRIBUTOR_WALLET = Constants.kFeeRecipientWalletPubkey;
+const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // used in leaderboard time-window branch
 
 // Helpers
 const isNonEmptyString = (s) => typeof s === "string" && s.trim().length > 0;
@@ -64,18 +37,16 @@ const asISO = (ts) => {
  * - lastUpdated from indexer watermark (indexer_cursor.updated_at) if available,
  *   else the max(last_updated) from totals tables for this wallet.
  */
-exports.getEarningsTotals = async (req, res) => {
+export async function getEarningsTotals(req, res) {
   try {
     const address = String(req.query.address || "").trim();
     if (!isNonEmptyString(address)) {
       return res.status(400).json({ error: "Missing ?address" });
     }
 
-    const pool = await getPool();
-
     // Fetch SOL/USDC totals
-    const [totalsRows] = await pool.execute(
-      `SELECT sol_total, usdc_total, last_updated
+    const [totalsRows] = await db.query(
+      `SELECT sol_total_raw AS sol_total, usdc_total_raw AS usdc_total, last_updated
        FROM rewards_totals
        WHERE wallet = ?`,
       [address]
@@ -87,14 +58,15 @@ exports.getEarningsTotals = async (req, res) => {
 
     if (totalsRows.length > 0) {
       const row = totalsRows[0];
-      solTotal = Number(row.sol_total || 0);
-      usdcTotal = Number(row.usdc_total || 0);
+      // raw → UI units
+      solTotal = Number(row.sol_total || 0) / 1e9;
+      usdcTotal = Number(row.usdc_total || 0) / 1e6;
       walletLastUpdated = asISO(row.last_updated);
     }
 
     // Fetch other token totals (row-per-token)
-    const [tokenRows] = await pool.execute(
-      `SELECT token_mint, token_symbol, total_amount, last_updated
+    const [tokenRows] = await db.query(
+      `SELECT token_mint, token_symbol, total_raw AS total_amount, decimals, last_updated
        FROM rewards_token_totals
        WHERE wallet = ?`,
       [address]
@@ -113,7 +85,7 @@ exports.getEarningsTotals = async (req, res) => {
 
     // Add other tokens (mint-based)
     for (const r of tokenRows) {
-      const amount = Number(r.total_amount || 0);
+      const amount = Number(r.total_amount || 0) / 10 ** Number(r.decimals || 0);
       if (amount === 0) continue;
       items.push({
         mint: r.token_mint,
@@ -126,9 +98,9 @@ exports.getEarningsTotals = async (req, res) => {
     let lastUpdatedISO = null;
 
     // Try indexer_cursor for the FEES wallet if present
-    const [cursorRows] = await pool.execute(
-      `SELECT updated_at FROM indexer_cursor ${FEES_WALLET ? "WHERE source_wallet = ?" : ""} LIMIT 1`,
-      FEES_WALLET ? [FEES_WALLET] : []
+    const [cursorRows] = await db.query(
+      `SELECT updated_at FROM indexer_cursor ${DISTRIBUTOR_WALLET ? "WHERE source_wallet = ?" : ""} LIMIT 1`,
+      DISTRIBUTOR_WALLET ? [DISTRIBUTOR_WALLET] : []
     );
     if (cursorRows.length > 0) {
       lastUpdatedISO = asISO(cursorRows[0].updated_at);
@@ -137,7 +109,7 @@ exports.getEarningsTotals = async (req, res) => {
     // Fallback to the wallet-specific last_updated if cursor missing
     if (!lastUpdatedISO) {
       // max of wallet totals + token totals for this address
-      const [maxRows] = await pool.execute(
+      const [maxRows] = await db.query(
         `SELECT GREATEST(
             IFNULL((SELECT UNIX_TIMESTAMP(MAX(last_updated)) FROM rewards_totals WHERE wallet = ?), 0),
             IFNULL((SELECT UNIX_TIMESTAMP(MAX(last_updated)) FROM rewards_token_totals WHERE wallet = ?), 0)
@@ -168,7 +140,7 @@ exports.getEarningsTotals = async (req, res) => {
  * Returns: { address, page, pageSize, total, events: [{signature, slot, blockTimeISO, assetType, tokenMint, amount}] }
  * - Paginates rewards_events for the wallet, most-recent first.
  */
-exports.getEarningsHistory = async (req, res) => {
+export async function getEarningsHistory(req, res) {
   try {
     const address = String(req.query.address || "").trim();
     if (!isNonEmptyString(address)) {
@@ -179,24 +151,22 @@ exports.getEarningsHistory = async (req, res) => {
     const pageSize = Math.min(Math.max(parseInt(req.query.pageSize || "50", 10), 1), 200);
     const offset = (page - 1) * pageSize;
 
-    const pool = await getPool();
-
     // Count total events for pagination
-    const [countRows] = await pool.execute(
+    const [countRows] = await db.query(
       `SELECT COUNT(*) AS c FROM rewards_events WHERE wallet = ?`,
       [address]
     );
     const total = Number(countRows[0]?.c || 0);
 
     // Fetch page of events
-    const [rows] = await pool.execute(
-      `SELECT signature, slot, block_time, asset_type, token_mint, amount
-       FROM rewards_events
-       WHERE wallet = ?
-       ORDER BY block_time DESC, slot DESC
-       LIMIT ? OFFSET ?`,
-      [address, pageSize, offset]
-    );
+    const sql = `
+      SELECT signature, slot, block_time, asset_type, token_mint, amount_raw AS amount, decimals
+      FROM rewards_events
+      WHERE wallet = ?
+      ORDER BY block_time DESC, slot DESC
+      LIMIT ${pageSize} OFFSET ${offset}
+    `;
+    const [rows] = await db.query(sql, [address]);
 
     const events = rows.map((r) => ({
       signature: r.signature,
@@ -204,7 +174,7 @@ exports.getEarningsHistory = async (req, res) => {
       blockTimeISO: asISO(r.block_time),
       assetType: r.asset_type, // 'SOL' | 'SPL'
       tokenMint: r.token_mint || null,
-      amount: Number(r.amount || 0),
+      amount: Number(r.amount || 0) / 10 ** Number(r.decimals || 0),
     }));
 
     return res.json({
@@ -218,7 +188,7 @@ exports.getEarningsHistory = async (req, res) => {
     console.error("getEarningsHistory error:", err);
     return res.status(500).json({ error: "Internal error" });
   }
-};
+}
 
 /**
  * GET /api/earnings/leaderboard?asset=SOL|USDC|<mint>&limit=50&from=ISO&to=ISO
@@ -228,7 +198,7 @@ exports.getEarningsHistory = async (req, res) => {
  *   - Other tokens from rewards_token_totals by token_mint
  * - If from/to provided, computes from rewards_events within the time window.
  */
-exports.getLeaderboard = async (req, res) => {
+export async function getLeaderboard(req, res) {
   try {
     const asset = String(req.query.asset || "").trim(); // 'SOL', 'USDC', or token mint
     const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 200);
@@ -239,8 +209,6 @@ exports.getLeaderboard = async (req, res) => {
       return res.status(400).json({ error: "Missing ?asset (use SOL, USDC, or a token mint)" });
     }
 
-    const pool = await getPool();
-
     // Time-bounded leaderboard → compute from events
     if (fromISO || toISO) {
       const where = ["asset_type = ?"];
@@ -248,13 +216,12 @@ exports.getLeaderboard = async (req, res) => {
 
       if (asset.toUpperCase() === "SOL") {
         params.push("SOL");
-        where.push("token_mint IS NULL");
+        where.push("token_mint = 'SOL'");
       } else if (asset.toUpperCase() === "USDC") {
         params.push("SPL");
-        where.push("token_mint IS NOT NULL");
-        // If you want to strictly enforce USDC mint, specify it here:
-        // where.push("token_mint = ?");
-        // params.push("<USDC_MINT>");
+        // strictly USDC
+        where.push("token_mint = ?");
+        params.push(USDC_MINT);
       } else {
         // specific token mint
         params.push("SPL");
@@ -272,30 +239,33 @@ exports.getLeaderboard = async (req, res) => {
       }
 
       const sql = `
-        SELECT wallet, SUM(amount) AS total
+        SELECT wallet, SUM(amount_raw) AS total_raw, MAX(decimals) AS dec
         FROM rewards_events
         WHERE ${where.join(" AND ")}
         GROUP BY wallet
-        ORDER BY total DESC
+        ORDER BY total_raw DESC
         LIMIT ?
       `;
       params.push(limit);
 
-      const [rows] = await pool.execute(sql, params);
+      const [rows] = await db.query(sql, params);
       return res.json({
         asset,
         from: fromISO || null,
         to: toISO || null,
-        rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) })),
+        rows: rows.map((r) => ({
+          wallet: r.wallet,
+          amount: Number(r.total_raw || 0) / 10 ** Number(r.dec || 0),
+        })),
       });
     }
 
     // Lifetime leaderboard → read from totals tables
     if (asset.toUpperCase() === "SOL") {
-      const [rows] = await pool.execute(
-        `SELECT wallet, sol_total AS total
+      const [rows] = await db.query(
+        `SELECT wallet, sol_total_raw AS total
          FROM rewards_totals
-         WHERE sol_total IS NOT NULL AND sol_total <> 0
+         WHERE sol_total_raw IS NOT NULL AND sol_total_raw <> 0
          ORDER BY total DESC
          LIMIT ?`,
         [limit]
@@ -304,15 +274,15 @@ exports.getLeaderboard = async (req, res) => {
         asset: "SOL",
         from: null,
         to: null,
-        rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) })),
+        rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) / 1e9 })),
       });
     }
 
     if (asset.toUpperCase() === "USDC") {
-      const [rows] = await pool.execute(
-        `SELECT wallet, usdc_total AS total
+      const [rows] = await db.query(
+        `SELECT wallet, usdc_total_raw AS total
          FROM rewards_totals
-         WHERE usdc_total IS NOT NULL AND usdc_total <> 0
+         WHERE usdc_total_raw IS NOT NULL AND usdc_total_raw <> 0
          ORDER BY total DESC
          LIMIT ?`,
         [limit]
@@ -321,13 +291,13 @@ exports.getLeaderboard = async (req, res) => {
         asset: "USDC",
         from: null,
         to: null,
-        rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) })),
+        rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) / 1e6 })),
       });
     }
 
     // Specific token mint lifetime board
-    const [rows] = await pool.execute(
-      `SELECT wallet, total_amount AS total
+    const [rows] = await db.query(
+      `SELECT wallet, total_raw AS total, decimals
        FROM rewards_token_totals
        WHERE token_mint = ?
        ORDER BY total DESC
@@ -338,34 +308,36 @@ exports.getLeaderboard = async (req, res) => {
       asset,
       from: null,
       to: null,
-      rows: rows.map((r) => ({ wallet: r.wallet, amount: Number(r.total || 0) })),
+      rows: rows.map((r) => ({
+        wallet: r.wallet,
+        amount: Number(r.total || 0) / 10 ** Number(r.decimals || 0),
+      })),
     });
   } catch (err) {
     console.error("getLeaderboard error:", err);
     return res.status(500).json({ error: "Internal error" });
   }
-};
+}
 
 /**
  * GET /api/earnings/status
  * Returns: { sourceWallet, lastSignature, lastSlot, lastUpdatedISO }
  * - Exposes the indexer's watermark for ops/observability.
  */
-exports.getIndexerStatus = async (_req, res) => {
+export async function getIndexerStatus(_req, res) {
   try {
-    const pool = await getPool();
-    const [rows] = await pool.execute(
+    const [rows] = await db.query(
       `SELECT source_wallet, last_signature, last_slot, updated_at
        FROM indexer_cursor
-       ${FEES_WALLET ? "WHERE source_wallet = ?" : ""}
+       ${DISTRIBUTOR_WALLET ? "WHERE source_wallet = ?" : ""}
        ORDER BY updated_at DESC
        LIMIT 1`,
-      FEES_WALLET ? [FEES_WALLET] : []
+      DISTRIBUTOR_WALLET ? [DISTRIBUTOR_WALLET] : []
     );
 
     if (rows.length === 0) {
       return res.json({
-        sourceWallet: FEES_WALLET || null,
+        sourceWallet: DISTRIBUTOR_WALLET || null,
         lastSignature: null,
         lastSlot: null,
         lastUpdatedISO: null,
@@ -383,4 +355,4 @@ exports.getIndexerStatus = async (_req, res) => {
     console.error("getIndexerStatus error:", err);
     return res.status(500).json({ error: "Internal error" });
   }
-};
+}
