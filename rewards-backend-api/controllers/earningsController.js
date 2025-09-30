@@ -13,6 +13,28 @@ import { Constants } from '../../constants.js';
 const DISTRIBUTOR_WALLET = Constants.kFeeRecipientWalletPubkey;
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // used in leaderboard time-window branch
 
+const SOL_DECIMALS = 9;
+const USDC_DECIMALS = 6;
+
+async function getTokenMetaMap(mints) {
+  // Returns: { [mint]: { symbol, name, decimals } }
+  const uniq = Array.from(new Set((mints || []).filter(Boolean)));
+  if (uniq.length === 0) return {};
+  // Build placeholders for IN (...)
+  const placeholders = uniq.map(() => '?').join(',');
+  const sql = `SELECT mint, symbol, name, decimals FROM token_registry WHERE mint IN (${placeholders})`;
+  const [rows] = await db.query(sql, uniq);
+  const map = {};
+  for (const r of rows) {
+    map[r.mint] = {
+      symbol: r.symbol || null,
+      name: r.name || null,
+      decimals: r.decimals != null ? Number(r.decimals) : null,
+    };
+  }
+  return map;
+}
+
 // Helpers
 const isNonEmptyString = (s) => typeof s === "string" && s.trim().length > 0;
 
@@ -72,24 +94,36 @@ export async function getEarningsTotals(req, res) {
       [address]
     );
 
+    // Added (look up metadata for all SPL mints in totals)
+    const splMints = tokenRows.map(r => r.token_mint).filter(Boolean);
+    const metaMap = await getTokenMetaMap(splMints);
+
     // Assemble items array for front-end compatibility
     const items = [];
 
     // Include SOL and USDC first (use symbols)
     if (solTotal && solTotal !== 0) {
-      items.push({ symbol: "SOL", amount: solTotal, mint: null });
+      items.push({ symbol: "SOL", name: "Solana", decimals: SOL_DECIMALS, amount: solTotal, mint: null });
     }
     if (usdcTotal && usdcTotal !== 0) {
-      items.push({ symbol: "USDC", amount: usdcTotal, mint: null });
+      items.push({ symbol: "USDC", name: "USD Coin", decimals: USDC_DECIMALS, amount: usdcTotal, mint: USDC_MINT });
     }
 
     // Add other tokens (mint-based)
     for (const r of tokenRows) {
-      const amount = Number(r.total_amount || 0) / 10 ** Number(r.decimals || 0);
+      const fallbackDecimals = r.decimals != null ? Number(r.decimals) : null;
+      const mm = metaMap[r.token_mint] || {};
+      const decimals = mm.decimals != null ? mm.decimals : fallbackDecimals;
+      const amount = decimals != null
+        ? Number(r.total_amount || 0) / 10 ** decimals
+        : 0;
+
       if (amount === 0) continue;
       items.push({
         mint: r.token_mint,
-        symbol: r.token_symbol || null, // symbol is convenience; may be null
+        symbol: (mm.symbol || r.token_symbol || null),
+        name: mm.name || null,
+        decimals: decimals != null ? decimals : null,
         amount,
       });
     }
@@ -168,14 +202,32 @@ export async function getEarningsHistory(req, res) {
     `;
     const [rows] = await db.query(sql, [address]);
 
-    const events = rows.map((r) => ({
-      signature: r.signature,
-      slot: Number(r.slot),
-      blockTimeISO: asISO(r.block_time),
-      assetType: r.asset_type, // 'SOL' | 'SPL'
-      tokenMint: r.token_mint || null,
-      amount: Number(r.amount || 0) / 10 ** Number(r.decimals || 0),
-    }));
+    const eventMints = rows
+      .filter(r => r.asset_type === 'SPL')
+      .map(r => r.token_mint)
+      .filter(Boolean);
+    const metaMap = await getTokenMetaMap(eventMints);
+
+    const events = rows.map((r) => {
+      const isSOL = r.asset_type === 'SOL';
+      const mm = !isSOL ? (metaMap[r.token_mint] || {}) : null;
+      const decimals = isSOL ? SOL_DECIMALS : (mm.decimals != null ? mm.decimals : (r.decimals != null ? Number(r.decimals) : null));
+      const amountUi = decimals != null ? (Number(r.amount || 0) / 10 ** decimals) : 0;
+      const symbol = isSOL ? 'SOL' : (mm.symbol || null);
+      const name = isSOL ? 'Solana' : (mm.name || null);
+
+      return {
+        signature: r.signature,
+        slot: Number(r.slot),
+        blockTimeISO: asISO(r.block_time),
+        assetType: r.asset_type, // 'SOL' | 'SPL'
+        tokenMint: r.token_mint || null,
+        amount: amountUi,
+        symbol,
+        name,
+        decimals,
+      };
+    });
 
     return res.json({
       address,
