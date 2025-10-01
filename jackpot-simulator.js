@@ -32,7 +32,7 @@ const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Con
 async function getLastHoldersSnapshot()
 {
     try {
-        const response = await fetch(Constants.kBackendUrl + "/api/jackpots/holders", {
+        const response = await fetch(Constants.kBackendUrl + "/jackpots/holders", {
             method: "GET",
             headers: {
             "Content-Type": "application/json"
@@ -55,7 +55,7 @@ async function updateHoldersSnapshot(addresses)
 {
     try {
         // Update the holders snapshot and retrieve the new holders
-        const response = await fetch(Constants.kBackendUrl + "/api/jackpots/holders", {
+        const response = await fetch(Constants.kBackendUrl + "/jackpots/holders", {
             method: "PUT",
             headers: {
             "Content-Type": "application/json"
@@ -106,7 +106,7 @@ async function sendEarnedSolToWallets(walletsToSendTo)
 async function notifyTelegramBot(notificationPayloud)
 {
     try {
-        const response = await fetch(Constants.kBackendUrl + "/api/jackpots/notifications", {
+        const response = await fetch(Constants.kBackendUrl + "/jackpots/notifications", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

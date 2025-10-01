@@ -17,9 +17,9 @@ bot.on('message', (msg) => {
     }
 });
 
-// Example of a JSON structure for the /api/jackpots/notify endpoint sent using CURL
+// Example of a JSON structure for the /jackpots/notify endpoint sent using CURL
 /*
-curl -X POST http://localhost:3000/api/jackpots/notify \
+curl -X POST http://localhost:3000/jackpots/notify \
 -H "Content-Type: application/json" \
 -d '{
     "messageType": "rewards",

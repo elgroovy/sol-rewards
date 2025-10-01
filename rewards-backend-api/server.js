@@ -17,10 +17,10 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-app.use("/api/rewards", rewardRoutes);
-app.use("/api/jackpots", jackpotRoutes);
-app.use("/api/metrics", tokenMetricsRoutes);
-app.use("/api/earnings", earningsRoutes);
+app.use("/rewards", rewardRoutes);
+app.use("/jackpots", jackpotRoutes);
+app.use("/metrics", tokenMetricsRoutes);
+app.use("/earnings", earningsRoutes);
 
 const options = {
   key:  fs.readFileSync("/home/ec2-user/sol-rewards/rewards-backend-api/pkey.pem"),

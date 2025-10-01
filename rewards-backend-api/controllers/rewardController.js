@@ -5,9 +5,9 @@ const chatId = -1002333200183;
 
 const bot = new TelegramBot(token, { polling: true });
 
-// Example of a JSON structure for the /api/rewards/notify endpoint sent using CURL
+// Example of a JSON structure for the /rewards/notify endpoint sent using CURL
 /*
-curl -X POST http://localhost:3000/api/rewards/notify \
+curl -X POST http://localhost:3000/rewards/notify \
 -H "Content-Type: application/json" \
 -d '{
     "messageType": "rewards",

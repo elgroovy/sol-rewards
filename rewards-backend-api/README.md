@@ -49,9 +49,9 @@
 
 ### API
 
-* `GET /api/earnings?address=…`: returns totals for SOL, USDC, and other tokens, plus `lastUpdated`.
-* `GET /api/earnings/history?address=…`: returns paginated events for a wallet (optional).
-* `GET /api/leaderboard?asset=…&range=…`: ranks wallets by totals (optional).
+* `GET /earnings?address=…`: returns totals for SOL, USDC, and other tokens, plus `lastUpdated`.
+* `GET /earnings/history?address=…`: returns paginated events for a wallet (optional).
+* `GET /leaderboard?asset=…&range=…`: ranks wallets by totals (optional).
 
 ### Scheduling and Configuration
 

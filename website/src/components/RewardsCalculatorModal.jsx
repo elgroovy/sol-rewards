@@ -170,7 +170,7 @@ export default function RewardsCalculatorModal({
   const fetchLive = async () => {
     setStatus("loading");
     try {
-      const metricsUrl = apiBase ? `${apiBase}/api/metrics` : `/api/metrics`;
+      const metricsUrl = apiBase ? `${apiBase}/metrics` : `/metrics`;
       const r = await fetch(metricsUrl, { cache: "no-store" });
       if (!r.ok) throw new Error("metrics fetch failed");
       const data = await r.json();
@@ -253,7 +253,7 @@ export default function RewardsCalculatorModal({
     }
     setEventsLoading(true);
     try {
-      const url = new URL(`${apiBase}/api/earnings/history`);
+      const url = new URL(`${apiBase}/earnings/history`);
       url.searchParams.set("address", address);
       url.searchParams.set("page", String(page));
       url.searchParams.set("pageSize", String(EVENTS_PAGE_SIZE));
@@ -286,7 +286,7 @@ export default function RewardsCalculatorModal({
         setEventsPage(1);
         return;
       }
-      const url = new URL(`${apiBase}/api/earnings`);
+      const url = new URL(`${apiBase}/earnings`);
       url.searchParams.set("address", a);
       const r = await fetch(url.toString(), { cache: "no-store" });
       if (!r.ok) throw new Error("earnings fetch failed");

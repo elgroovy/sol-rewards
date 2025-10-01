@@ -52,7 +52,7 @@ const asISO = (ts) => {
 };
 
 /**
- * GET /api/earnings?address=...
+ * GET /earnings?address=...
  * Returns: { address, items: [{mint?, symbol?, amount}], lastUpdatedISO }
  * - SOL and USDC from rewards_totals
  * - Other tokens from rewards_token_totals
@@ -170,7 +170,7 @@ export async function getEarningsTotals(req, res) {
 };
 
 /**
- * GET /api/earnings/history?address=...&page=1&pageSize=50
+ * GET /earnings/history?address=...&page=1&pageSize=50
  * Returns: { address, page, pageSize, total, events: [{signature, slot, blockTimeISO, assetType, tokenMint, amount}] }
  * - Paginates rewards_events for the wallet, most-recent first.
  */
@@ -243,7 +243,7 @@ export async function getEarningsHistory(req, res) {
 }
 
 /**
- * GET /api/earnings/leaderboard?asset=SOL|USDC|<mint>&limit=50&from=ISO&to=ISO
+ * GET /earnings/leaderboard?asset=SOL|USDC|<mint>&limit=50&from=ISO&to=ISO
  * Returns: { asset, from, to, rows: [{wallet, amount}] }
  * - By default, lifetime totals:
  *   - SOL/USDC from rewards_totals
@@ -372,7 +372,7 @@ export async function getLeaderboard(req, res) {
 }
 
 /**
- * GET /api/earnings/status
+ * GET /earnings/status
  * Returns: { sourceWallet, lastSignature, lastSlot, lastUpdatedISO }
  * - Exposes the indexer's watermark for ops/observability.
  */

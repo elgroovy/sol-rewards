@@ -211,7 +211,7 @@ async function notifyTelegramBot(messageType, walletsData, transactionUrl)
     };
 
     try {
-        const response = await fetch(Constants.kBackendUrl + "/api/rewards/notifications", {
+        const response = await fetch(Constants.kBackendUrl + "/rewards/notifications", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
