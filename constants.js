@@ -32,8 +32,8 @@ export const Constants = {
     kMinWithheldBalance : 0.1,      // Minimum witheld balance to withdraw for rewards
     kTokensToAccumulate : 10000,    // Start distributing rewards when this amount of tokens is accumulated
     kRewardMinHolding : 100_000,    // 100,000 tokens for rewards eligibility
-    kLotteryPercent : 10,           // 1% of the rewards go to the jackpot
-    kTreasuryPercent : 20,          // 2% for treasury and the rest (7%) for holders
+    kLotteryPercent : 30,           // 3% of the rewards go to the jackpot
+    kTreasuryPercent : 20,          // 2% for treasury and the rest (5%) for holders
     kBurnPercent : 0,               // Burns are disabled for now
     kSolToReserve: 0.1,             // 0.1 SOL to reserve for fees
     kSolMinLimit : 0.00005,         // 0.00005 SOL is the minimum we can send to a holder, to save on TX fees

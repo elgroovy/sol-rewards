@@ -6,9 +6,9 @@ import RewardsCalculatorModal from "./RewardsCalculatorModal";
 export default function Fees() {
   const boxes = [
     { p: "10%", l: "TAX", s: "(Buy / Sell / Transfer)" },
-    { p: "7%", l: "Holders", s: "Reflections on every trade" },
+    { p: "5%", l: "Holders", s: "Reflections on every trade" },
+    { p: "3%", l: "Lottery", s: "Jackpot prizes for lucky holders" },
     { p: "2%", l: "Treasury", s: "Growth & project funding" },
-    { p: "1%", l: "Lottery", s: "Jackpot prizes for lucky holders" },
   ];
 
   const [calcOpen, setCalcOpen] = useState(false);
