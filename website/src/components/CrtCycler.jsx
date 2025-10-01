@@ -161,7 +161,7 @@ export default function CrtCycler({
       >
         <div className="text-center px-8">
           <div
-            className="text-6xl md:text-7xl font-extrabold tracking-wide"
+            className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-wide leading-tight"
             style={{
               textShadow:
                 "0 0 10px rgba(0,255,255,.45), 0 0 18px rgba(255,0,255,.35)",
@@ -169,11 +169,11 @@ export default function CrtCycler({
           >
             {cur.p}
           </div>
-          <div className="mt-2 text-xl md:text-2xl font-semibold">
+          <div className="mt-1 text-lg md:text-2xl font-semibold">
             {cur.l}
           </div>
           {cur.s ? (
-            <div className="mt-1 text-white/75">{cur.s}</div>
+            <div className="mt-1 text-sm md:text-base text-white/75 leading-snug">{cur.s}</div>
           ) : null}
         </div>
       </div>
