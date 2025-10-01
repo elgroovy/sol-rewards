@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import 'dotenv/config';
 
 import rewardRoutes from "./routes/rewardRoutes.js";
 import jackpotRoutes from "./routes/jackpotRoutes.js";

@@ -73,4 +73,12 @@ CREATE TABLE IF NOT EXISTS indexer_cursor (
   updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (source_wallet)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Token registry for CA to name conversion
+CREATE TABLE IF NOT EXISTS token_registry (
+  mint       VARCHAR(64) PRIMARY KEY,
+  symbol     VARCHAR(32) NULL,
+  name       VARCHAR(128) NULL,
+  decimals   INT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 */
