@@ -1,5 +1,6 @@
 import path from "path";
 import HtmlWebpackPlugin from "html-webpack-plugin";
+import CopyWebpackPlugin from "copy-webpack-plugin";
 import { fileURLToPath } from "url";
 
 // __dirname replacement for ESM
@@ -47,6 +48,17 @@ export default {
       template: "./public/index.html",
       inject: "body",
       favicon: false,
+    }),
+    // copy /public -> /dist (except index.html)
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, "public"),
+          to: path.resolve(__dirname, "dist"),
+          globOptions: { ignore: ["**/index.html"] },
+          noErrorOnMissing: true,
+        },
+      ],
     }),
   ],
 };
