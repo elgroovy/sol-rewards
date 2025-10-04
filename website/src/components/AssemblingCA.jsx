@@ -20,6 +20,35 @@ export default function AssemblingCA({
   const [pieces, setPieces] = useState([]);
   const [go, setGo] = useState(false);
   const [done, setDone] = useState(false);
+
+  // Only play when in viewport
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setInView(true);
+            io.disconnect(); // play once
+            break;
+          }
+        }
+      },
+      // Trigger as soon as any pixel is visible (both scroll directions)
+      { root: null, rootMargin: "0px", threshold: 0 }
+    );
+    io.observe(el);
+    // If it's already visible at mount (common when scrolling down to it), fire immediately
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0) {
+      setInView(true);
+      io.disconnect();
+    }
+    return () => io.disconnect();
+  }, []);
+
   const [copied, setCopied] = useState(false);
   const [rotateActive, setRotateActive] = useState(false);
   const toastTimerRef = useRef(null);
@@ -46,7 +75,7 @@ export default function AssemblingCA({
       toastTimerRef.current = setTimeout(() => setCopied(false), 1600);
       setRotateActive(true);
       clearTimeout(rotateTimerRef.current);
-      rotateTimerRef.current = setTimeout(() => setRotateActive(false), 1000); // Animation duration
+      rotateTimerRef.current = setTimeout(() => setRotateActive(false), 1000);
     } catch (_) {
       // if copy fails, still show a small toast to indicate action
       setCopied(true);
@@ -54,7 +83,7 @@ export default function AssemblingCA({
       toastTimerRef.current = setTimeout(() => setCopied(false), 1600);
       setRotateActive(true);
       clearTimeout(rotateTimerRef.current);
-      rotateTimerRef.current = setTimeout(() => setRotateActive(false), 1000); // Animation duration
+      rotateTimerRef.current = setTimeout(() => setRotateActive(false), 1000);
     }
   };
 
@@ -76,11 +105,14 @@ export default function AssemblingCA({
     // eslint-disable-next-line
   }, [value]);
 
-  // Layout: measure final letter positions
+  // Layout + play
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const wrap = wrapRef.current;
     if (!wrap) return;
+
+    // Wait until visible in viewport (mobile fix)
+    if (!inView) return;
 
     // positions relative to wrapper center
     const wrapBox = wrap.getBoundingClientRect();
@@ -101,25 +133,25 @@ export default function AssemblingCA({
       y1: targets[i].y,
       delay: i * stagger,
     }));
-    
+
     setPieces(next);
 
-   // schedule play + completion
-   if (!media.matches) {
-     setDone(false);
-     setGo(false);
-     // kick off on the next (next) frame so CSS transitions fire
-     requestAnimationFrame(() => {
-       requestAnimationFrame(() => setGo(true));
-     });
-     // mark finished after last letter’s stagger + duration
-     const total = duration + stagger * (chars.length - 1) + 200;
-     const timer = setTimeout(() => setDone(true), total);
-     return () => {
-       clearTimeout(timer);
-       setGo(false);
-       setDone(false);
-     };
+    // schedule play + completion
+    if (!media.matches) {
+      setDone(false);
+      setGo(false);
+      // kick off on the next (next) frame so CSS transitions fire
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setGo(true));
+      });
+       // mark finished after last letter’s stagger + duration
+      const total = duration + stagger * (chars.length - 1) + 200;
+      const timer = setTimeout(() => setDone(true), total);
+      return () => {
+        clearTimeout(timer);
+        setGo(false);
+        setDone(false);
+      };
     } else {
       // reduced motion: show the assembled text immediately
       setGo(false);
@@ -129,7 +161,7 @@ export default function AssemblingCA({
         setDone(false);
       };
     }
-  }, [chars, edges, stagger]);
+  }, [chars, edges, stagger, inView]);
 
   return (
     <div className="w-full flex justify-center">
@@ -145,7 +177,6 @@ export default function AssemblingCA({
           border: "1px solid rgba(255,255,255,0.18)",
           boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.25)",
         }}
-        // Click: copy + allow re-play on Alt/Option click
         onClick={(e) => {
           if (e.altKey) {
             setGo(false);
@@ -163,22 +194,21 @@ export default function AssemblingCA({
             copyToClipboard();
           }
         }}
-       >
-        {/* Toast */}
-      <div
-        aria-live="polite"
-        className={`pointer-events-none absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-lg text-sm font-medium
-                    bg-white/15 backdrop-blur-md border border-white/20 shadow-lg
-                    transition-opacity duration-300 ${copied ? "opacity-100" : "opacity-0"}`}
       >
-        Copied!
-      </div>
-      
-        {/* 1) Actual text (static) */}
+        {/* Toast */}
         <div
-          className="font-extrabold tracking-wide text-white select-text"
+          aria-live="polite"
+          className={`pointer-events-none absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-lg text-sm font-medium
+                      bg-white/15 backdrop-blur-md border border-white/20 shadow-lg
+                      transition-opacity duration-300 ${copied ? "opacity-100" : "opacity-0"}`}
+        >
+          Copied!
+        </div>
+
+        {/* Actual text (static) */}
+        <div
+          className="font-extrabold tracking-wide text-white select-text text-[13px] md:text-[18px]"
           style={{
-            fontSize,
             letterSpacing: "0",
             lineHeight: 1.2,
             // only reveal after the animation has finished
@@ -203,7 +233,7 @@ export default function AssemblingCA({
           ))}
         </div>
 
-        {/* 2) Flying letters (absolute) */}
+        {/* Flying letters (absolute) */}
         <div
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
           style={{ filter: "drop-shadow(0 0 8px rgba(255,255,255,.35))" }}
@@ -211,9 +241,8 @@ export default function AssemblingCA({
           {pieces.map((p, i) => (
             <span
               key={`f-${i}`}
-              className="absolute"
+              className="absolute text-[13px] md:text-[18px]"
               style={{
-                fontSize,
                 fontWeight: 800,
                 letterSpacing: "0",
                 color: "white",

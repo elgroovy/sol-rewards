@@ -28,20 +28,24 @@ export default function Reveal({
       return;
     }
 
-    // Trigger a bit earlier and use a tiny threshold so mobile reliably fires
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          if (once) obs.disconnect();
-        } else if (!once) {
-          setInView(false);
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setInView(true);       // or your state setter name
+          io.disconnect();      // play once
         }
       },
-      { rootMargin: "0px 0px -15% 0px", threshold: 0.01 }
+      // Fire as soon as any pixel is visible; no negative margins
+      { root: null, rootMargin: "0px", threshold: 0 }
     );
 
-    obs.observe(el);
+    io.observe(el);
+    // If already visible when mounted, reveal immediately
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0 && r.left < window.innerWidth && r.right > 0) {
+      setInView(true);
+      io.disconnect();
+    }
     return () => obs.disconnect();
   }, [once]);
 
