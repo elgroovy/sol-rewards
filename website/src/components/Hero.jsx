@@ -90,7 +90,7 @@ export default function Hero() {
                 </a>
 
                 <a
-                  href="https://dexscreener.com/solana/LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST"
+                  href="https://dexscreener.com/solana/2hdes5rjlmoanb9hjskfffx62pciqrfi5q86cptckjef"
                   className="neon-hover rounded-2xl px-3 py-3 border border-white-400 hover:border-white-300 flex items-center bg-transparent hover:bg-green-500/20 font-semibold transition"
                 >
                   <img src="https://dexscreener.com/favicon.ico" alt="DexScreener Logo" className="inline-block mr-2 h-5 align-middle" />
@@ -128,7 +128,7 @@ export default function Hero() {
               </a>
 
               <a
-                href="https://dexscreener.com/solana/LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST"
+                href="https://dexscreener.com/solana/2hdes5rjlmoanb9hjskfffx62pciqrfi5q86cptckjef"
                 className="neon-hover rounded-2xl px-3 py-3 border border-white-400 hover:border-white-300 flex items-center bg-transparent hover:bg-green-500/20 font-semibold transition"
               >
                 <img src="https://dexscreener.com/favicon.ico" alt="DexScreener Logo" className="inline-block mr-2 h-5 align-middle" />
