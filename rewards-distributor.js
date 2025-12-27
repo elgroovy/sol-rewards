@@ -85,7 +85,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
     if (Constants.kRewardTokenMintPubkey.length > 0)
     {
         console.log(`Swapping ${totalLamportsToSend / LAMPORTS_PER_SOL} SOL for reward token with mint address ${Constants.kRewardTokenMintPubkey}...`);
-        const swapResult = await swapToken(connection, ownerKeypair, 'So11111111111111111111111111111111111111112', totalLamportsToSend,  Constants.kRewardTokenMintPubkey, Constants.kSwapSlippage);
+        const swapResult = await swapToken(connection, ownerKeypair, Constants.kWSOLMint, totalLamportsToSend,  Constants.kRewardTokenMintPubkey, Constants.kFeeRecipientWalletPubkey);
         if (!swapResult.success)
         {
             console.error('Unable to swap SOL to reward token!');
@@ -295,7 +295,7 @@ async function distributeRewards() {
         const remainingTokenAmount = tokenBalance - burnAmount;
         const tokensToSwap = remainingTokenAmount / Math.pow(10, tokenAmount.value.decimals)
         console.log(`Swapping ${tokensToSwap} tokens for SOL...`);
-        const swapResult = await swapToken(connection, ownerKeypair, mint, remainingTokenAmount, 'So11111111111111111111111111111111111111112', Constants.kSwapSlippage);  
+        const swapResult = await swapToken(connection, ownerKeypair, Constants.kTokenMintPubkey, remainingTokenAmount, Constants.kWSOLMint, Constants.kFeeRecipientWalletPubkey);  
 
         // Finally, divide the SOL among the holders and treasury wallet
         if (swapResult.success) {

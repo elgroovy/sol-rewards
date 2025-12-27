@@ -15,7 +15,7 @@
     "fs": "^0.0.1-security",
     "https": "^1.0.0",
     "mysql2": "^3.14.0",
-    "node-telegram-bot-api": "^0.66.0"
+    "node-telegram-bot-api": "^0.67.0"
   },
   "author": "elgroovy",
   "license": "ISC"

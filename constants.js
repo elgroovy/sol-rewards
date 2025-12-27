@@ -1,27 +1,33 @@
 
 export const Constants = {
     kSolanaNetwork : "mainnet-beta",
-    kHeliusRPCEndpoint : "https://mainnet.helius-rpc.com/?api-key=9bddc7cc-e4cf-4933-b10c-12e6fedc9f10", //"https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
+    kHeliusRPCEndpoint : "https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
     kHeliusDevnetRPCEndpoint : "https://devnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
 
     kBackendUrl: "https://api.testrewardstoken.com", // "https://localhost:3000"
 
+    kWSOLMint: "So11111111111111111111111111111111111111112",
+
     kRaydiumVaultAuthority2: "GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL",
+    kMeteoraMainTRTWSOLDAMMPool: "5nWp6AzuuXqVMhSAPBrxn6hA5QgmVGF3H3XHDBRvZKA5",
     kMeteoraTRTWSOLPool: "7rC3Uo1A7wLQDhxbAzpFxeLi7yHKYQh5odLbDNZjPYU",
 
     kTokenMintPubkey : "LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST",
     
-    kFeeRecipientWalletKeyFile : "~/sol-rewards/keys/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES.json",
+    kFeeRecipientWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES.json",
     kFeeRecipientWalletPubkey : "nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES",
     
-    kTreasuryWalletKeyFile : "~/sol-rewards/keys/LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA.json",
+    kTreasuryWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA.json",
     kTreasuryWalletPubkey : "LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA",
 
     kBurnWalletPubkey : "M7HR93zu4ToKFeAzpta96S1mpC2KJu9o2fXZhjtBURN",
 
-    kJackpotWalletKeyFile : "~/sol-rewards/keys/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK.json",
+    kJackpotWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK.json",
     kJackpotWalletPubKey : "RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK",
-
+    
+    kBuybackWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB.json",
+    kBuybackWalletPubkey : "gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB",
+    
     kRewardTokenMintPubkey : "9VxExA1iRPbuLLdSJ2rB3nyBxsyLReT4aqzZBMaBaY1p",
     kRewardTokenDecimals : 9,
     kRewardTokenSymbol : "REVS",
@@ -38,7 +44,11 @@ export const Constants = {
     kSolToReserve: 0.1,             // 0.1 SOL to reserve for fees
     kSolMinLimit : 0.00005,         // 0.00005 SOL is the minimum we can send to a holder, to save on TX fees
     kBatchSize : 10,                // Number of holders to send rewards to in one batch
-    kSwapSlippage : 50,             // 0.5% slippage
+    kSwapSlippage : 500,            // 0.5% slippage
+    
+    // Buyback settings
+    kBuybackSolToReserve: 0.04,     // 0.04 SOL to reserve for fees, including DAMMv2 liquidity addition
+    kBuybackTokenAccount: "9RQPZTRMcaskfFUgvW71aFBsxxX1zovAMJSZbev9jYFZ",
 
     // Jackpot settings
     kJackpotThreshold : 0.2,                    // 0.2 SOL

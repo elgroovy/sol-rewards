@@ -589,10 +589,10 @@ async function checkTokenBalanceAndSwap() {
         const swapResult = await swapToken(
             connection,
             jackpotKeypair,
-            new PublicKey(Constants.kRewardTokenMintPubkey),
+            Constants.kRewardTokenMintPubkey,
             Math.floor(tokensToSwap * Math.pow(10, info.value.decimals)),
-            "So11111111111111111111111111111111111111112",
-            Constants.kSwapSlippage
+            Constants.kWSOLMint,
+            Constants.kJackpotWalletPubKey
         );
     
         // Handle the swap result

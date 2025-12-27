@@ -1,9 +1,8 @@
 
 import { VersionedTransaction } from "@solana/web3.js";
-//import { Keypair } from "@solana/web3.js";
-//import { Connection } from "@solana/web3.js";
-
 import axios from 'axios';
+
+const JUPITER_API_KEY = '97a7a2bc-a8fb-453e-9b17-68a2f61c631f';
 
 /**
  * Swaps tokens using the Jupiter API.
@@ -13,59 +12,50 @@ import axios from 'axios';
  * @param {string} inputMint - The mint address of the input token.
  * @param {number} inputAmmount - The amount of input tokens to swap.
  * @param {string} outputMint - The mint address of the output token.
- * @param {number} slippageBps - The slippage tolerance in basis points.
+ * @param {number} takerWallet - The wallet address of the taker.
  * @returns {Promise<void>} - A promise that resolves when the swap is complete.
  */
-export async function swapToken(connection, keypair, inputMint, inputAmmount, outputMint, slippageBps) {
+export async function swapToken(connection, keypair, inputMint, inputAmmount, outputMint, takerWallet) {
     try {
-        const quoteResponse = await axios.get('https://api.jup.ag/swap/v1/quote', {
+        const orderResponse = await axios.get('https://api.jup.ag/ultra/v1/order', {
         params: {
             inputMint: inputMint,
             outputMint: outputMint,
             amount: inputAmmount,
-            slippageBps: slippageBps
+            taker: takerWallet
+        },
+        headers: {
+            'x-api-key': JUPITER_API_KEY
         }
         });
-        //console.log({ quoteResponse: quoteResponse.data });
+        //console.log({ orderResponse: orderResponse.data });
 
-        // Get serialized transactions for the swap
-        const swapResponse = await axios.post('https://api.jup.ag/swap/v1/swap', {
-            quoteResponse: quoteResponse.data,
-            userPublicKey: keypair.publicKey.toString(),
-            wrapAndUnwrapSol: true,
-            prioritizationFeeLamports: 10000
-            }, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const { swapTransaction } = swapResponse.data;
-
-        // Deserialize the transaction
-        const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-        var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+        // Deserialize, sign and serialize the transaction
+        const transaction = VersionedTransaction.deserialize(Buffer.from(orderResponse.data.transaction, 'base64'));
         //console.log(transaction);
-
-        // Replace the blockhash
-        const bhInfo = (await connection.getLatestBlockhashAndContext('finalized'));
-        transaction.message.recentBlockhash = bhInfo.value.blockhash;
-
-        // Sign the transaction
         transaction.sign([keypair]);
+        const signedTransaction = Buffer.from(transaction.serialize()).toString('base64');
 
-        // Simulate the transaction
-        const simulation = await connection.simulateTransaction(transaction, { commitment: 'processed' });
-        if (simulation.value.err) {
-            throw new Error('Simulate failed: ' + simulation.value.err);
+        const executeResponse = await (
+            await fetch('https://api.jup.ag/ultra/v1/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': JUPITER_API_KEY,
+                },
+                body: JSON.stringify({
+                    signedTransaction: signedTransaction,
+                    requestId: orderResponse.data.requestId,
+                }),
+            })
+        ).json();
+
+        if (executeResponse.status === "Success") {
+            console.log(`Swap TX landed: https://solscan.io/tx/${executeResponse.signature}`);
+        } else {
+            console.error('Swap failed:', JSON.stringify(executeResponse, null, 2));
+            console.log(`https://solscan.io/tx/${executeResponse.signature}`);
         }
-        // Send the transaction
-        const signature = await connection.sendTransaction(transaction, { skipPreflight: true, preflightCommitment: 'processed' });
-        const confirmation = await connection.confirmTransaction(signature, { commitment: 'finalized', lastValidBlockHeight: bhInfo.value.lastValidBlockHeight });
-        if (confirmation.value.err) {
-            throw new Error('Transaction failed: ' + confirmation.value.err);
-        }
-        console.log(`Swap TX landed: https://solscan.io/tx/${signature}`);
 
         return { success: true };
     } catch (error) {
