@@ -42,18 +42,18 @@ export async function notify(req, res) {
         const formattedWalletAddress = `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
 
         // Generate Solscan URL for the wallet
-        //const solScanUrl = `https://solscan.io/account/${walletAddress}`;
+        const solScanUrl = `https://solscan.io/account/${walletAddress}`;
 
         // Add wallet details to the message
-        formattedMessage += `🔸 ${formattedWalletAddress}  \`${amountEarned.toFixed(6)}\` ${tokenSymbol}\n`;
+        formattedMessage += `▸ [${formattedWalletAddress}](${solScanUrl})  ${amountEarned.toFixed(6)} ${tokenSymbol}\n`;
     });
 
     // Add the transaction URL at the bottom
-    formattedMessage += `\n💲 [TX](${transactionUrl})`;
+    formattedMessage += `━━━━━━━━━━━━━━━\n💲 [TX](${transactionUrl})`;
 
     // Add the transaction total
     const tokenSymbol = wallets[0].tokenSymbol || 'Unknown Token';
-    formattedMessage += ` Total: \`${txTotal.toFixed(6)}\` ${tokenSymbol} 💲\n\n`;
+    formattedMessage += ` Total: ${txTotal.toFixed(6)} ${tokenSymbol} 💲\n\n`;
 
     const gifUrl = 'http://ipfs.io/ipfs/bafkreihvohw4mva6tqnbjkkp3dwq2lzlfmmos5wig2e2sncjxrkfakbb6e';
 
