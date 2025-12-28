@@ -45,7 +45,7 @@ export async function notify(req, res) {
         const solScanUrl = `https://solscan.io/account/${walletAddress}`;
 
         // Add wallet details to the message
-        formattedMessage += `▸ [${formattedWalletAddress}](${solScanUrl})  ${amountEarned.toFixed(6)} ${tokenSymbol}\n`;
+        formattedMessage += `🔸 [${formattedWalletAddress}](${solScanUrl})  ${amountEarned.toFixed(6)} ${tokenSymbol}\n`;
     });
 
     // Add the transaction URL at the bottom
