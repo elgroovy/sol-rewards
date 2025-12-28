@@ -21,6 +21,7 @@ import {
 import { loadKeypairFromFile } from "./keypair-utils.js";
 import { swapToken } from './jupiter-swap.js';
 import { Constants } from './constants.js';
+import { collectFees } from './fee-collector.js';
 import fetch from 'node-fetch';
 
 
@@ -243,10 +244,21 @@ async function distributeRewards() {
     isRunning = true;
 
     try {
+        console.log("===================================");
+        console.log("Starting Rewards Distribution Cycle");
+        console.log("===================================");
+
         const mint = new PublicKey(Constants.kTokenMintPubkey); 
 
         // Connection to the cluster
         const connection = new Connection(Constants.kHeliusRPCEndpoint, "confirmed");
+
+         // Collect withheld fees first
+        console.log("\n--- Collecting Withheld Fees ---");
+        const collectionResult = await collectFees(connection, ownerKeypair);
+        if (collectionResult.success && collectionResult.collected > 0) {
+            console.log(`✓ Successfully collected ${collectionResult.collected} tokens from ${collectionResult.accountsProcessed} accounts`);
+        }
 
         // Get the token account of the owner
         const tokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -260,7 +272,7 @@ async function distributeRewards() {
             TOKEN_2022_PROGRAM_ID,
         );
 
-        // See if we already hit the token limit to start distributing rewards
+        // Check if we have enough tokens to distribute
         const tokenAmount = await connection.getTokenAccountBalance(tokenAccount.address);
         const tokenBalance = tokenAmount.value.amount;
         if (tokenBalance < BigInt(Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals)) {
@@ -273,7 +285,7 @@ async function distributeRewards() {
         if (Constants.kBurnPercent !== 0) {
             burnAmount = Math.floor(tokenBalance * (Constants.kBurnPercent / 100));
             const tokensToBurn = burnAmount / Math.pow(10, tokenAmount.value.decimals);
-            console.log(`Burning ${tokensToBurn} tokens...`);
+            console.log(`Burning ${tokensToBurn} tokens (${Constants.kBurnPercent}%)...`);
 
             // Build and send the Burn transaction
             const signature = await burnChecked(
@@ -288,7 +300,7 @@ async function distributeRewards() {
                 undefined,
                 TOKEN_2022_PROGRAM_ID,
             );
-            console.log(`Burn completed. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
+            console.log(`✓ Burn completed. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
         }
 
         // Swap remaining tokens for SOL (or the reward token if it's set)
@@ -315,6 +327,11 @@ async function distributeRewards() {
             const treasuryLamports = Math.floor(accountBalance * (Constants.kTreasuryPercent / 100));
             const holdersLamports = accountBalance - jackpotLamports - treasuryLamports;
 
+            console.log(`Distribution breakdown:`);
+            console.log(`  - Jackpot: ${jackpotLamports / LAMPORTS_PER_SOL} SOL (${Constants.kLotteryPercent}%)`);
+            console.log(`  - Treasury: ${treasuryLamports / LAMPORTS_PER_SOL} SOL (${Constants.kTreasuryPercent}%)`);
+            console.log(`  - Holders: ${holdersLamports / LAMPORTS_PER_SOL} SOL`);
+
             // Send SOL to the jackpots wallet
             console.log(`Sending ${jackpotLamports / LAMPORTS_PER_SOL} SOL to the jackpots wallet...`);
             const jackpotWallet = new PublicKey(Constants.kJackpotWalletPubKey);
@@ -326,11 +343,11 @@ async function distributeRewards() {
                 }),
             );
             const jackpotSig = await sendAndConfirmTransaction(connection, jackpotTransferTransaction, [ownerKeypair]);
-            console.log(`Sent to jackpot. Signature: https://solscan.io/tx/${jackpotSig}?cluster=${Constants.kSolanaNetwork}`);
+            console.log(`✓ Sent to jackpot. Signature: https://solscan.io/tx/${jackpotSig}?cluster=${Constants.kSolanaNetwork}`);
 
             // Send SOL to the treasury wallet
             console.log(`Sending ${treasuryLamports / LAMPORTS_PER_SOL} SOL to the treasury wallet...`);
-            const treasuryWallet = new PublicKey(Constants.kTreasuryWalletPubkey);
+            const treasuryWallet = new PublicKey(/*Constants.kTreasuryWalletPubkey*/Constants.kBuybackWalletPubkey);
             const treasuryTransferTransaction = new Transaction().add(
                 SystemProgram.transfer({
                   fromPubkey: ownerKeypair.publicKey,
@@ -339,10 +356,14 @@ async function distributeRewards() {
                 }),
             );
             const treasurySig = await sendAndConfirmTransaction(connection, treasuryTransferTransaction, [ownerKeypair]);
-            console.log(`Sent to treasury. Signature: https://solscan.io/tx/${treasurySig}?cluster=${Constants.kSolanaNetwork}`);
+            console.log(`✓ Sent to treasury. Signature: https://solscan.io/tx/${treasurySig}?cluster=${Constants.kSolanaNetwork}`);
 
             // Send the rest to the holders
             await distributeToHolders(connection, holdersLamports);
+
+            console.log("\n==============================");
+            console.log("✓ Rewards Distribution Complete!");
+            console.log("================================");
         }
     } catch (error) {
         console.error("An error occurred during the reward distribution process:", error);

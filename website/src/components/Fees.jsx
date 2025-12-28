@@ -9,7 +9,7 @@ export default function Fees() {
     { p: "10%", l: "TAX", s: "(Buy / Sell / Transfer)" },
     { p: "5%", l: "Holders", s: "Reflections on every trade" },
     { p: "3%", l: "Lottery", s: "Jackpot prizes for lucky holders" },
-    { p: "2%", l: "Treasury", s: "Growth & project funding" },
+    { p: "2%", l: "Buyback / Liquidity", s: "Automated buybacks and liquidity growth" },
   ];
 
   const [calcOpen, setCalcOpen] = useState(false);

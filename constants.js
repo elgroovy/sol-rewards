@@ -44,7 +44,6 @@ export const Constants = {
     kSolToReserve: 0.1,             // 0.1 SOL to reserve for fees
     kSolMinLimit : 0.00005,         // 0.00005 SOL is the minimum we can send to a holder, to save on TX fees
     kBatchSize : 10,                // Number of holders to send rewards to in one batch
-    kSwapSlippage : 500,            // 0.5% slippage
     
     // Buyback settings
     kBuybackSolToReserve: 0.01,     // 0.01 SOL to reserve for fees
