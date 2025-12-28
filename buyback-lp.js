@@ -3,14 +3,10 @@ import {
     PublicKey,
     Keypair,
     LAMPORTS_PER_SOL,
-    SystemProgram,
-    Transaction,
     sendAndConfirmTransaction
 } from "@solana/web3.js";
 
 import {
-    getOrCreateAssociatedTokenAccount,
-    createSyncNativeInstruction,
     getMint,
     TOKEN_PROGRAM_ID,
     TOKEN_2022_PROGRAM_ID,
