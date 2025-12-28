@@ -5,6 +5,6 @@ import {
 
 const router = express.Router();
 
-router.post("/notifications", notify);
+router.post("/notify", notify);
 
 export default router;

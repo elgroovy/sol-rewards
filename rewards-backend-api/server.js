@@ -23,8 +23,8 @@ app.use("/metrics", tokenMetricsRoutes);
 app.use("/earnings", earningsRoutes);
 
 const options = {
-  key:  fs.readFileSync("/home/ec2-user/sol-rewards/rewards-backend-api/pkey.pem"),
-  cert: fs.readFileSync("/home/ec2-user/sol-rewards/rewards-backend-api/fullchain.pem"), // leaf + intermediates
+  key:  fs.readFileSync("./pkey.pem"),
+  cert: fs.readFileSync("./fullchain.pem"), // leaf + intermediates
   // If your key is passphrase-protected:
   // passphrase: "your-passphrase"
 };

@@ -1,7 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 
 const token = '7665493064:AAE5oXMgvUFp3x6tDzQEVSygelEVYavDWDQ';
-const chatId = -1002333200183;
+const chatId = -1002183224911;//-1002333200183;
 
 const bot = new TelegramBot(token, { polling: true });
 
@@ -10,7 +10,6 @@ const bot = new TelegramBot(token, { polling: true });
 curl -X POST http://localhost:3000/rewards/notify \
 -H "Content-Type: application/json" \
 -d '{
-    "messageType": "rewards",
     "wallets": [
         {
             "walletAddress": "3fA1bC2dE4FgH5IjK6LmN7OpQ8RsT9UvWxYzA1B2",
@@ -24,13 +23,13 @@ curl -X POST http://localhost:3000/rewards/notify \
 
 // Sends notifications to the Telegram bot
 export async function notify(req, res) {
-    const { messageType, wallets, transactionUrl } = req.body;
+    const { wallets, transactionUrl } = req.body;
 
-    if (!messageType || !wallets || !Array.isArray(wallets) || !transactionUrl) {
-        return res.status(400).send({ success: false, error: 'Invalid JSON structure. Ensure messageType, wallets, and transactionUrl are provided.' });
+    if (!wallets || !Array.isArray(wallets) || !transactionUrl) {
+        return res.status(400).send({ success: false, error: 'Invalid JSON structure. Ensure wallets, and transactionUrl are provided.' });
     }
 
-    let formattedMessage = `💲 *${messageType.toUpperCase()} NOTIFICATION* 💲\n\nTo Test or Not to Test, That is the Question... 🤔\n\n`;
+    let formattedMessage = `\n\n*System Status:* Online\n\n*Distribution Cycle:* Complete\n\n`;
 
     let txTotal = 0.0;
 
@@ -50,13 +49,13 @@ export async function notify(req, res) {
     });
 
     // Add the transaction URL at the bottom
-    formattedMessage += `\n👉 [TX](${transactionUrl})`;
+    formattedMessage += `\n💲 [TX](${transactionUrl})`;
 
     // Add the transaction total
     const tokenSymbol = wallets[0].tokenSymbol || 'Unknown Token';
-    formattedMessage += ` Total: \`${txTotal.toFixed(6)}\` ${tokenSymbol} 👈\n\n`;
+    formattedMessage += ` Total: \`${txTotal.toFixed(6)}\` ${tokenSymbol} 💲\n\n`;
 
-    const gifUrl = 'http://ipfs.io/ipfs/bafybeihi4r7z36d6rkxrd3ftyh4oxahhrmw43jhzmotb72itihgswnr46a';
+    const gifUrl = 'http://ipfs.io/ipfs/bafkreihvohw4mva6tqnbjkkp3dwq2lzlfmmos5wig2e2sncjxrkfakbb6e';
 
     // Send GIF along with the formatted text
     bot.sendAnimation(chatId, gifUrl, {

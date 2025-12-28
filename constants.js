@@ -28,9 +28,10 @@ export const Constants = {
     kBuybackWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB.json",
     kBuybackWalletPubkey : "gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB",
     
-    kRewardTokenMintPubkey : "9VxExA1iRPbuLLdSJ2rB3nyBxsyLReT4aqzZBMaBaY1p",
+    // Disable token rewards, use SOL instead
+    kRewardTokenMintPubkey : "",
     kRewardTokenDecimals : 9,
-    kRewardTokenSymbol : "REVS",
+    kRewardTokenSymbol : "",
 
     kTokenDecimals: 6,
 
