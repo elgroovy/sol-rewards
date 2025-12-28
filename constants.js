@@ -47,7 +47,7 @@ export const Constants = {
     kSwapSlippage : 500,            // 0.5% slippage
     
     // Buyback settings
-    kBuybackSolToReserve: 0.04,     // 0.04 SOL to reserve for fees, including DAMMv2 liquidity addition
+    kBuybackSolToReserve: 0.01,     // 0.01 SOL to reserve for fees
     kBuybackTokenAccount: "9RQPZTRMcaskfFUgvW71aFBsxxX1zovAMJSZbev9jYFZ",
 
     // Jackpot settings

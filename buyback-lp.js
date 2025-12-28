@@ -27,9 +27,6 @@ async function runBuyback() {
         const connection = new Connection(Constants.kHeliusRPCEndpoint, "confirmed");
         const buybackKeypair = await loadKeypairFromFile(Constants.kBuybackWalletKeyFile);
 
-        // Initialize CpAmm SDK
-        const cpAmm = new CpAmm(connection);
-
         // Check SOL balance
         const balanceLamports = await connection.getBalance(buybackKeypair.publicKey);
         const reserveLamports = Constants.kBuybackSolToReserve * LAMPORTS_PER_SOL;
@@ -43,8 +40,15 @@ async function runBuyback() {
         const halfLamports = Math.floor(usableLamports / 2);
 
         console.log(`Buyback wallet balance: ${balanceLamports / LAMPORTS_PER_SOL} SOL`);
-        console.log(`Using ${halfLamports / LAMPORTS_PER_SOL} SOL to buy TRT and ${halfLamports / LAMPORTS_PER_SOL} SOL for WSOL liquidity.`);
 
+        if (halfLamports < LAMPORTS_PER_SOL * 0.01)
+        {
+            console.log("Insufficient SOL for buyback. Skipping...");
+            return;
+        }
+
+        console.log(`Using ${halfLamports / LAMPORTS_PER_SOL} SOL to buy TRT`);
+        
         // Swap half SOL to TRT
         const swapResult = await swapToken(
             connection,
@@ -69,45 +73,48 @@ async function runBuyback() {
 
         console.log(`TRT balance: ${trtBalanceInfo.value.uiAmount}`);
 
-        // Wrap the other half of SOL into WSOL
-        const wsolTokenAccount = await getOrCreateAssociatedTokenAccount(
-            connection,
-            buybackKeypair,
-            new PublicKey(Constants.kWSOLMint),
-            buybackKeypair.publicKey,
-            true,
-            "finalized",
-            { commitment: "finalized" }
-        );
-
-        const wsolLamports = halfLamports;
-        if (wsolLamports <= 0) {
-            console.error("Insufficient SOL remaining for WSOL wrap and fees");
-            return;
-        }
-
-        console.log(`Wrapping ${wsolLamports / LAMPORTS_PER_SOL} SOL into WSOL...`);
-
-        // Transfer SOL into the WSOL account and sync
-        const transferIx = SystemProgram.transfer({
-            fromPubkey: buybackKeypair.publicKey,
-            toPubkey: wsolTokenAccount.address,
-            lamports: wsolLamports,
-        });
-        
-        const syncIx = createSyncNativeInstruction(wsolTokenAccount.address);
-        const transaction = new Transaction().add(transferIx, syncIx);
-        const wrapSig = await sendAndConfirmTransaction(connection, transaction, [buybackKeypair]);
-        
-        console.log(`WSOL wrapped: ${wrapSig}`);
-
-        // Verify WSOL balance
-        const wsolBalance = await connection.getTokenAccountBalance(wsolTokenAccount.address, "confirmed");
-        console.log(`WSOL balance: ${wsolBalance.value.uiAmount}`);
-
         // Get pool state
+        const cpAmm = new CpAmm(connection); // initialize CpAmm SDK
         const poolAddress = new PublicKey(Constants.kMeteoraMainTRTWSOLDAMMPool);
         const poolState = await cpAmm.fetchPoolState(poolAddress);
+
+        // Determine token order in the pool
+        const wsolMint = new PublicKey(Constants.kWSOLMint);
+        const isWsolTokenA = poolState.tokenAMint.equals(wsolMint);
+
+        // Get Token2022 info for TRT
+        let tokenAInfo = null;
+        if (!isWsolTokenA) { // TRT is token A
+            const trtMintInfo = await getMint(connection, poolState.tokenAMint, "confirmed", TOKEN_2022_PROGRAM_ID);
+            const epochInfo = await connection.getEpochInfo();
+            tokenAInfo = {
+                mint: trtMintInfo,
+                currentEpoch: epochInfo.epoch,
+            };
+        }
+
+        // Get deposit quote - use TRT as input since we want to deposit all of it
+        const depositQuote = await cpAmm.getDepositQuote({
+            inAmount: trtAmount, // Deposit all TRT
+            isTokenA: !isWsolTokenA, // TRT is token B if WSOL is token A
+            minSqrtPrice: poolState.sqrtMinPrice,
+            maxSqrtPrice: poolState.sqrtMaxPrice,
+            sqrtPrice: poolState.sqrtPrice,
+            inputTokenInfo: tokenAInfo,
+        });
+
+        console.log(`Liquidity delta: ${depositQuote.liquidityDelta.toString()}`);
+        console.log(`Output amount needed: ${depositQuote.outputAmount.toString()}`);
+        console.log(`SOL needed: ${depositQuote.outputAmount.toNumber() / LAMPORTS_PER_SOL} SOL`);
+
+        // Check if we have enough SOL to cover liquidity + fees
+        const solForLiquidity = halfLamports; // the second half reserved for liquidity
+        if (depositQuote.outputAmount.gte(new BN(solForLiquidity))) {
+            console.error(
+                `Not enough SOL for liquidity. Need ${depositQuote.outputAmount.toNumber() / LAMPORTS_PER_SOL} SOL, have ${solForLiquidity / LAMPORTS_PER_SOL}`
+            );
+            return;
+        }
 
         // Get all positions for this user in this pool
         const userPositions = await cpAmm.getUserPositionByPool(poolAddress, buybackKeypair.publicKey);
@@ -145,41 +152,6 @@ async function runBuyback() {
             } else {
                 throw new Error("Position creation apparently failed");
             }
-        }
-
-        // Determine token order in the pool
-        const wsolMint = new PublicKey(Constants.kWSOLMint);
-        const isWsolTokenA = poolState.tokenAMint.equals(wsolMint);
-
-        // Get Token2022 info for TRT
-        let tokenAInfo = null;
-        if (!isWsolTokenA) { // TRT is token A
-            const trtMintInfo = await getMint(connection, poolState.tokenAMint, "confirmed", TOKEN_2022_PROGRAM_ID);
-            const epochInfo = await connection.getEpochInfo();
-            tokenAInfo = {
-                mint: trtMintInfo,
-                currentEpoch: epochInfo.epoch,
-            };
-        }
-
-        // Get deposit quote - use TRT as input since we want to deposit all of it
-        const depositQuote = await cpAmm.getDepositQuote({
-            inAmount: trtAmount, // Deposit all TRT
-            isTokenA: !isWsolTokenA, // TRT is token B if WSOL is token A
-            minSqrtPrice: poolState.sqrtMinPrice,
-            maxSqrtPrice: poolState.sqrtMaxPrice,
-            sqrtPrice: poolState.sqrtPrice,
-            inputTokenInfo: tokenAInfo,
-        });
-
-        console.log(`Liquidity delta: ${depositQuote.liquidityDelta.toString()}`);
-        console.log(`Output amount needed: ${depositQuote.outputAmount.toString()}`);
-        console.log(`WSOL needed: ${depositQuote.outputAmount.toNumber() / LAMPORTS_PER_SOL} SOL`);
-
-        // Check if we have enough WSOL
-        if (depositQuote.outputAmount.gt(new BN(wsolLamports))) {
-            console.error(`Not enough WSOL. Need ${depositQuote.outputAmount.toNumber() / LAMPORTS_PER_SOL}, have ${wsolLamports / LAMPORTS_PER_SOL}`);
-            return;
         }
 
         // Set max amounts based on the quote
