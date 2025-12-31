@@ -1,7 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 
 const token = '7665493064:AAE5oXMgvUFp3x6tDzQEVSygelEVYavDWDQ';
-const chatId = -1002183224911;//-1002333200183;
+const chatId = -1002333200183; //-1002183224911;
 
 const bot = new TelegramBot(token, { polling: true });
 

@@ -4,7 +4,7 @@ export const Constants = {
     kHeliusRPCEndpoint : "https://mainnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
     kHeliusDevnetRPCEndpoint : "https://devnet.helius-rpc.com/?api-key=fd4ac0ba-d60e-4b97-b121-22141efc9c16",
 
-    kBackendUrl: "https://api.testrewardstoken.com", // "https://localhost:3000"
+    kBackendUrl: "https://api.testrewardstoken.com" /*"http://localhost:3000"*/,
 
     kWSOLMint: "So11111111111111111111111111111111111111112",
 

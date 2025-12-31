@@ -2,7 +2,7 @@ import * as db from "../../db.js";
 import TelegramBot from 'node-telegram-bot-api';
 
 const token = '8035972978:AAGzSnyLoerRufDc2ZpSdTqZzLc4Su3vLMM';
-const chatId = -1002333200183;
+const chatId = -1002333200183; //-1002183224911;
 
 const bot = new TelegramBot(token, { polling: true });
 
@@ -22,20 +22,17 @@ bot.on('message', (msg) => {
 curl -X POST http://localhost:3000/jackpots/notify \
 -H "Content-Type: application/json" \
 -d '{
-    "messageType": "rewards",
-    "wallets": [
-        {
-            "walletAddress": "3fA1bC2dE4FgH5IjK6LmN7OpQ8RsT9UvWxYzA1B2",
-            "solEarned": 0.000123456
-        }
-    ],
-    "transactionUrl": "https://solscan.io/tx/fake_transaction_url"
+    "messageType": "simple",
+    "messageText": "Sample Text",
+    "mediaUrl": "https://example.com/image.jpg",
+    "isAnimated": false
 }'
 */
 
 // Sends notifications to the Telegram bot
 export async function notify(req, res) {
 
+    console.log("Received notification request:", req.body);
     const messageType = req.body.messageType;
 
     if (!messageType) {

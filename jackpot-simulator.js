@@ -26,6 +26,8 @@ import WebSocket from 'ws';
 let jackpotKeypair, treasuryKeypair = null;
 let jackpotCheckInterval = Constants.kJackpotCheckInterval;
 
+const SIMULATION_MODE = false; // Set to false for production
+
 // Connection to the cluster
 const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
 
@@ -106,7 +108,7 @@ async function sendEarnedSolToWallets(walletsToSendTo)
 async function notifyTelegramBot(notificationPayloud)
 {
     try {
-        const response = await fetch(Constants.kBackendUrl + "/jackpots/notifications", {
+        const response = await fetch(Constants.kBackendUrl + "/jackpots/notify", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -205,7 +207,14 @@ async function simulateJackpotDraw(jackpotBalance, luckyOldHolder, luckyNewHolde
 
     if (walletsToSendTo.length > 0)
     {
-        const txUrl = await sendEarnedSolToWallets(walletsToSendTo);
+        // SIMULATION MODE: Comment out the real transaction and use a fake URL
+        let txUrl = "";
+        if (!SIMULATION_MODE) {
+            txUrl = await sendEarnedSolToWallets(walletsToSendTo);
+        } else {
+            txUrl = `https://solscan.io/tx/SIMULATED_TX_${Date.now()}?cluster=${Constants.kSolanaNetwork}`;
+            console.log(`[SIMULATION] Would send to:`, walletsToSendTo);
+        }
 
         messageText += `👏 Congratulations! 👏 \n[TX](${txUrl})`;
 
@@ -619,18 +628,21 @@ async function handleJackpots() {
 
         await sendSimpleMessage("Verifying account balance...", 5000);
 
-        if (currBalance > Constants.kJackpotThreshold) {
-            console.log(`Jackpot wallet balance: ${currBalance} SOL`);
+        // In simulation mode, use a fake balance if real balance is too low
+        const balanceToUse = SIMULATION_MODE ? Constants.kJackpotThreshold + 0.1 : currBalance;
+
+        if (balanceToUse > Constants.kJackpotThreshold) {
+            console.log(`${SIMULATION_MODE ? '[SIMULATION] ' : ''}Jackpot wallet balance: ${balanceToUse} SOL${SIMULATION_MODE ? ` (using ${balanceToUse} SOL for simulation)` : ''}`);
 
             // Reset the check interval
             jackpotCheckInterval = Constants.kJackpotCheckInterval;
 
             // Grab the current holders snapshot
-            const holderAddresses = await getCurrentHoldersSnapshot();
+            const holderAddresses = SIMULATION_MODE ? [Constants.kTreasuryWalletPubkey] : await getCurrentHoldersSnapshot();
             if (holderAddresses.length > 0) {
                 // Store the snapshot on the server
-                const newHolders = await updateHoldersSnapshot(holderAddresses);
-                await drawJackpot(holderAddresses, newHolders, currBalance);
+                const newHolders = SIMULATION_MODE ? [] : await updateHoldersSnapshot(holderAddresses);
+                await drawJackpot(holderAddresses, newHolders, balanceToUse);
             } else {
                 console.log("No eligible holders found for the jackpot draw.");
                 await sendSimpleMessage("No eligible holders found for the jackpot draw.");
@@ -639,13 +651,18 @@ async function handleJackpots() {
             console.log("Insufficient balance to draw the jackpot.");
             jackpotCheckInterval = Math.min(jackpotCheckInterval * 2, 8 * 60); // 8 hours max
             const nextCheckDelayText = jackpotCheckInterval >= 60 ? `${Math.floor(jackpotCheckInterval / 60)} hour(s)` : `${jackpotCheckInterval} mins`; 
-            await sendSimpleMessage(`Jackpot draw requires more SOL.\nCurrent balance: ${currBalance.toFixed(3)} SOL.\nCurrent threshold: ${Constants.kJackpotThreshold} SOL.\nI'll check again in ${nextCheckDelayText}!`);
+            await sendSimpleMessage(`Jackpot draw requires more SOL.\nCurrent balance: ${balanceToUse.toFixed(3)} SOL.\nCurrent threshold: ${Constants.kJackpotThreshold} SOL.\nI'll check again in ${nextCheckDelayText}!`);
         }
     } catch (error) {
         console.error("Error handling jackpots:", error);
     } finally {
-        // Retry after predefined time period in case of an error
-        setTimeout(handleJackpots, jackpotCheckInterval * 60 * 1000);
+        // Retry after predefined time period in case of an error.
+        // In simulation mode, don't retry automatically
+        if (!SIMULATION_MODE) {
+            setTimeout(handleJackpots, jackpotCheckInterval * 60 * 1000);
+        } else {
+            console.log("[SIMULATION] Skipping automatic retry. Run manually to test again.");
+        }
     }
 }
 

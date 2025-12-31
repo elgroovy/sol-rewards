@@ -7,7 +7,7 @@ import {
 
 const router = express.Router();
 
-router.post("/notifications", notify);
+router.post("/notify", notify);
 router.put("/holders", updateEligibleHolders);
 router.get("/holders", getEligibleHolders);
 
