@@ -138,3 +138,6 @@ dist
 keys/*
 /package-lock.json
 TRT.pem
+rewards-backend-api/cert.pem
+rewards-backend-api/fullchain.pem
+rewards-backend-api/pkey.pem
