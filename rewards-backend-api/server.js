@@ -3,7 +3,8 @@ import cors from "cors";
 import fs from "fs";
 import https from "https";
 import http from "http";
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '../.env' });
 
 import rewardRoutes from "./routes/rewardRoutes.js";
 import jackpotRoutes from "./routes/jackpotRoutes.js";

@@ -10,18 +10,10 @@ export const Constants = {
 
     kTokenMintPubkey : "LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST",
     
-    kFeeRecipientWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES.json",
     kFeeRecipientWalletPubkey : "nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES",
-    
-    kTreasuryWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA.json",
     kTreasuryWalletPubkey : "LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA",
-
     kBurnWalletPubkey : "M7HR93zu4ToKFeAzpta96S1mpC2KJu9o2fXZhjtBURN",
-
-    kJackpotWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK.json",
     kJackpotWalletPubKey : "RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK",
-    
-    kBuybackWalletKeyFile : "~/Documents/Projects/sol-rewards/keys/gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB.json",
     kBuybackWalletPubkey : "gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB",
     
     // Disable token rewards, use SOL instead

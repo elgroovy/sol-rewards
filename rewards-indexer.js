@@ -8,27 +8,27 @@
  */
 
 import fetch from "node-fetch";
-import 'dotenv/config';
+import { Constants } from './constants.js';
+import { Config } from './config.js';
 import * as db from "./db.js"
 import { PublicKey } from "@solana/web3.js";
 
-// --- ENV & constants --------------------------------------------
-const {
-  HELIUS_API_KEY,
-  DISTRIBUTOR_WALLET,
-  INDEX_INTERVAL_MIN = "30",
-} = process.env;
+// Indexer schedule (minutes)
+const INDEX_INTERVAL_MIN = 30;
 
-if (!HELIUS_API_KEY || !DISTRIBUTOR_WALLET) {
-  console.error("Missing HELIUS_API_KEY or DISTRIBUTOR_WALLET in environment");
+// Configurable guard for rent-size SOL movements
+const RENT_LAMPORTS_MAX = 5_000_000; // 0.005 SOL default
+
+if (!Config.heliusApiKey) {
+  console.error("Missing HELIUS_API_KEY in environment");
   process.exit(1);
 }
 
-const HELIUS_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+const HELIUS_URL = `https://mainnet.helius-rpc.com/?api-key=${Config.heliusApiKey}`;
 // Helius REST bulk endpoint for enhanced parsed transactions
-const HELIUS_REST_URL = `https://api.helius.xyz/v0/transactions?api-key=${process.env.HELIUS_API_KEY}`;
+const HELIUS_REST_URL = `https://api.helius.xyz/v0/transactions?api-key=${Config.heliusApiKey}`;
 
-const INTERVAL_MS = Number(INDEX_INTERVAL_MIN) * 60 * 1000;
+const INTERVAL_MS = INDEX_INTERVAL_MIN * 60 * 1000;
 
 // USDC main mint (for raw totals in rewards_totals)
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -42,7 +42,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function getCursor() {
   const [rows] = await db.query(
     `SELECT last_signature, last_slot FROM indexer_cursor WHERE source_wallet = ? LIMIT 1`,
-    [DISTRIBUTOR_WALLET]
+    [Constants.kFeeRecipientWalletPubkey]
   );
   if (rows.length) {
     return {
@@ -60,7 +60,7 @@ async function saveCursor(sig, slot) {
      ON DUPLICATE KEY UPDATE last_signature=VALUES(last_signature),
                              last_slot=VALUES(last_slot),
                              updated_at=NOW()`,
-    [DISTRIBUTOR_WALLET, sig, slot]
+    [Constants.kFeeRecipientWalletPubkey, sig, slot]
   );
 }
 
@@ -90,7 +90,7 @@ async function rpcBatch(calls) {
 }
 
 async function fetchSignatures(before, limit = 1000) {
-  return rpc("getSignaturesForAddress", [DISTRIBUTOR_WALLET, { limit, before }]);
+  return rpc("getSignaturesForAddress", [Constants.kFeeRecipientWalletPubkey, { limit, before }]);
 }
 
 async function postHeliusBulk(signatures, { signal } = {}) {
@@ -191,9 +191,6 @@ export function extractRewards(tx) {
   if (!tx) return [];
   const out = [];
 
-  // configurable guard for rent-size SOL movements (lamports)
-  const RENT_LAMPORTS_MAX = Number(process.env.RENT_LAMPORTS_MAX ?? 5_000_000); // 0.005 SOL default
-
   const signature = tx.signature;
   const slot = tx.slot;
   const blockTime = tx.timestamp ? new Date(tx.timestamp * 1000) : new Date();
@@ -202,7 +199,7 @@ export function extractRewards(tx) {
   const hasTokenPayout =
     Array.isArray(tx.tokenTransfers) &&
     tx.tokenTransfers.some(
-      (tt) => tt.fromUserAccount === DISTRIBUTOR_WALLET && tt.tokenAmount > 0
+      (tt) => tt.fromUserAccount === Constants.kFeeRecipientWalletPubkey && tt.tokenAmount > 0
     );
 
   // Quick instruction hint: many “rent” ops come with create/close account types
@@ -216,7 +213,7 @@ export function extractRewards(tx) {
   // --- Native SOL transfers (filter rent-sized ones tied to token payouts) ---
   if (Array.isArray(tx.nativeTransfers)) {
     for (const nt of tx.nativeTransfers) {
-      if (nt.fromUserAccount !== DISTRIBUTOR_WALLET) continue;
+      if (nt.fromUserAccount !== Constants.kFeeRecipientWalletPubkey) continue;
       if (!nt.toUserAccount || !(nt.amount > 0)) continue;
 
 
@@ -250,7 +247,7 @@ export function extractRewards(tx) {
   // --- SPL token transfers (keep as-is) ---
   if (Array.isArray(tx.tokenTransfers)) {
     for (const tt of tx.tokenTransfers) {
-      if (tt.fromUserAccount !== DISTRIBUTOR_WALLET) continue;
+      if (tt.fromUserAccount !== Constants.kFeeRecipientWalletPubkey) continue;
       if (!tt.toUserAccount || !(tt.tokenAmount > 0)) continue;
 
       // Skip off-curve destinations (e.g. temp accounts / PDAs).

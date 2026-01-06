@@ -669,8 +669,8 @@ async function handleJackpots() {
 
 // Load the owner wallet keypair
 try {
-    jackpotKeypair = await loadKeypairFromFile(Constants.kJackpotWalletKeyFile);
-    treasuryKeypair = await loadKeypairFromFile(Constants.kTreasuryWalletKeyFile);
+    jackpotKeypair = await loadKeypairFromFile(Config.jackpotKeyFile);
+    treasuryKeypair = await loadKeypairFromFile(Config.treasuryKeyFile);
 } catch (error) {
     console.error("Failed to load the keypair:", error);
     throw error;

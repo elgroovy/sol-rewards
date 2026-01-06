@@ -22,7 +22,7 @@ import { Config } from './config.js';
 async function runBuyback() {
     try {
         const connection = new Connection(Config.heliusMainnetUrl, "confirmed");
-        const buybackKeypair = await loadKeypairFromFile(Constants.kBuybackWalletKeyFile);
+        const buybackKeypair = await loadKeypairFromFile(Config.buybackKeyFile);
 
         // Check SOL balance
         const balanceLamports = await connection.getBalance(buybackKeypair.publicKey);

@@ -375,7 +375,7 @@ async function distributeRewards() {
 
 // Load the owner wallet keypair
 try {
-    ownerKeypair = await loadKeypairFromFile(Constants.kFeeRecipientWalletKeyFile);
+    ownerKeypair = await loadKeypairFromFile(Config.feeRecipientKeyFile);
     //console.log(`Owner public key: ${ownerKeypair.publicKey.toBase58()}`);
 } catch (error) {
     console.error("Failed to load the owner keypair:", error);
