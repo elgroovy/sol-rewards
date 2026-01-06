@@ -13,4 +13,12 @@ export const Config = {
     treasuryKeyFile: process.env.TREASURY_WALLET_KEY_FILE,
     jackpotKeyFile: process.env.JACKPOT_WALLET_KEY_FILE,
     buybackKeyFile: process.env.BUYBACK_WALLET_KEY_FILE,
+
+    // Telegram bot settings
+    telegramChatId: process.env.TELEGRAM_CHAT_ID || "",
+    rewardsTelegramBotToken: process.env.REWARDS_TELEGRAM_BOT_TOKEN || "",
+    jackpotTelegramBotToken: process.env.JACKPOT_TELEGRAM_BOT_TOKEN || "",
+
+    // Indexer settings
+    indexerIntervalMin: Number(process.env.INDEXER_INTERVAL_MIN) || 30,
 };

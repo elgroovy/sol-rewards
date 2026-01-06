@@ -1,9 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { Config } from '../../config.js';
 
-const token = '7665493064:AAE5oXMgvUFp3x6tDzQEVSygelEVYavDWDQ';
-const chatId = -1002333200183; //-1002183224911;
-
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(Config.rewardsTelegramBotToken, { polling: true });
 
 // Example of a JSON structure for the /rewards/notify endpoint sent using CURL
 /*
@@ -58,7 +56,7 @@ export async function notify(req, res) {
     const gifUrl = 'http://ipfs.io/ipfs/bafkreihvohw4mva6tqnbjkkp3dwq2lzlfmmos5wig2e2sncjxrkfakbb6e';
 
     // Send GIF along with the formatted text
-    bot.sendAnimation(chatId, gifUrl, {
+    bot.sendAnimation(Config.telegramChatId, gifUrl, {
         caption: formattedMessage,
         parse_mode: 'Markdown'
     })

@@ -1,10 +1,8 @@
 import * as db from "../../db.js";
 import TelegramBot from 'node-telegram-bot-api';
+import { Config } from '../../config.js';
 
-const token = '8035972978:AAGzSnyLoerRufDc2ZpSdTqZzLc4Su3vLMM';
-const chatId = -1002333200183; //-1002183224911;
-
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(Config.jackpotTelegramBotToken, { polling: true });
 
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
@@ -50,20 +48,20 @@ export async function notify(req, res) {
 
         // Send image/GIF along with the formatted text
         if (isAnimated) {
-            promise = bot.sendAnimation(chatId, mediaUrl, {
+            promise = bot.sendAnimation(Config.telegramChatId, mediaUrl, {
                 caption: formattedMessage,
                 parse_mode: 'Markdown'
             });
         }
         else {
-            promise = bot.sendPhoto(chatId, mediaUrl, {
+            promise = bot.sendPhoto(Config.telegramChatId, mediaUrl, {
                 caption: formattedMessage,
                 parse_mode: 'Markdown'
             });
         }
     }
     else if (messageType === 'command') {
-        promise = bot.sendMessage(chatId, messageText);
+        promise = bot.sendMessage(Config.telegramChatId, messageText);
     }
     promise.then(() => {
         res.status(200).send({ success: true, message: 'Message sent to Telegram bot.' });

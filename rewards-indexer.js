@@ -13,9 +13,6 @@ import { Config } from './config.js';
 import * as db from "./db.js"
 import { PublicKey } from "@solana/web3.js";
 
-// Indexer schedule (minutes)
-const INDEX_INTERVAL_MIN = 30;
-
 // Configurable guard for rent-size SOL movements
 const RENT_LAMPORTS_MAX = 5_000_000; // 0.005 SOL default
 
@@ -28,7 +25,7 @@ const HELIUS_URL = `https://mainnet.helius-rpc.com/?api-key=${Config.heliusApiKe
 // Helius REST bulk endpoint for enhanced parsed transactions
 const HELIUS_REST_URL = `https://api.helius.xyz/v0/transactions?api-key=${Config.heliusApiKey}`;
 
-const INTERVAL_MS = INDEX_INTERVAL_MIN * 60 * 1000;
+const INTERVAL_MS = Config.indexerIntervalMin * 60 * 1000;
 
 // USDC main mint (for raw totals in rewards_totals)
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";

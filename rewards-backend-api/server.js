@@ -3,13 +3,19 @@ import cors from "cors";
 import fs from "fs";
 import https from "https";
 import http from "http";
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-dotenv.config({ path: '../.env' });
 
-import rewardRoutes from "./routes/rewardRoutes.js";
-import jackpotRoutes from "./routes/jackpotRoutes.js";
-import tokenMetricsRoutes from "./routes/tokenMetricsRoutes.js";
-import earningsRoutes from "./routes/earningsRoutes.js";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+// Dynamic imports after dotenv loads.
+// This ensures env variables are available when these files are imported
+const { default: rewardRoutes } = await import("./routes/rewardRoutes.js");
+const { default: jackpotRoutes } = await import("./routes/jackpotRoutes.js");
+const { default: tokenMetricsRoutes } = await import("./routes/tokenMetricsRoutes.js");
+const { default: earningsRoutes } = await import("./routes/earningsRoutes.js");
 
 const app = express();
 const port = process.env.PORT || 3000;
