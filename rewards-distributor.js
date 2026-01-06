@@ -57,6 +57,22 @@ async function getRewardTokenBalance(connection) {
     return {address: rewardTokenAccount, programId : tokenProgramId, balance: info.value.amount, decimals: info.value.decimals};
 }
 
+async function getBalances(connection, pubkeys) {
+    const BATCH_SIZE = 100;
+    const balanceMap = new Map();
+    
+    for (let i = 0; i < pubkeys.length; i += BATCH_SIZE) {
+        const batch = pubkeys.slice(i, i + BATCH_SIZE);
+        const accountInfos = await connection.getMultipleAccountsInfo(batch);
+        
+        batch.forEach((pubkey, idx) => {
+            balanceMap.set(pubkey.toBase58(), accountInfos[idx]?.lamports || 0);
+        });
+    }
+    
+    return balanceMap;
+}
+
 async function distributeToHolders(connection, totalLamportsToSend) {
     console.log(`Got ${totalLamportsToSend / LAMPORTS_PER_SOL} SOL to distribute to holders...`);
 
@@ -103,6 +119,16 @@ async function distributeToHolders(connection, totalLamportsToSend) {
     // Fetch the total supply from the mint account
     const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), {commitment: "confirmed"}, TOKEN_2022_PROGRAM_ID);
     const totalSupply = mintAccount.supply;
+
+    // Get all owner pubkeys for balance checking (only needed for SOL distribution)
+    let balanceMap = new Map();
+    if (Constants.kRewardTokenMintPubkey.length === 0) {
+        const ownerPubkeys = allAccounts.map(accountInfo => 
+            unpackAccount(accountInfo.pubkey, accountInfo.account, TOKEN_2022_PROGRAM_ID).owner
+        );
+        console.log(`Fetching SOL balances for ${ownerPubkeys.length} holders...`);
+        balanceMap = await getBalances(connection, ownerPubkeys);
+    }
 
     const instructions = [];
     const walletsData = [];
@@ -160,6 +186,13 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             // If SOL amount is too small, skip.
             // We keep accumulating until we have enough to distribute.
             if (holderShare < BigInt(Constants.kSolMinLimit * LAMPORTS_PER_SOL)) {
+                continue;
+            }
+
+            // Check if recipient has enough SOL to be rent-exempt
+            const recipientBalance = balanceMap.get(account.owner.toBase58()) || 0;
+            if (recipientBalance === 0) {
+                console.log(`Skipping ${account.owner.toBase58()} - no SOL balance`);
                 continue;
             }
 
@@ -275,10 +308,10 @@ async function distributeRewards() {
         // Check if we have enough tokens to distribute
         const tokenAmount = await connection.getTokenAccountBalance(tokenAccount.address);
         const tokenBalance = tokenAmount.value.amount;
-        if (tokenBalance < BigInt(Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals)) {
+        /*if (tokenBalance < BigInt(Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals)) {
             console.log("Not enough tokens to distribute rewards");
             return;
-        }
+        }*/
 
         // Calculate the amount of tokens to burn
         let burnAmount = 0;
