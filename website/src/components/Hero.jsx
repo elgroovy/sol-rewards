@@ -1,11 +1,77 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import useParticleField from "../hooks/useParticleField";
 import GlitchTitle from "./GlitchTitle";
 import Reveal from "./Reveal";
 import AssemblingCA from "./AssemblingCA";
+import { Constants } from "../../../constants.js";
 
 export default function Hero() {
   const canvasRef = useParticleField();
+  
+  // State for token stats
+  const [stats, setStats] = useState({
+    liquidity: 0,
+    volume: 0,
+    marketCap: 0,
+    holders: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch token stats from API
+  useEffect(() => {
+    const fetchStats = async () => {
+    try {
+      const response = await fetch(`${Constants.kBackendUrl}/metrics`);
+      if (!response.ok) throw new Error('Failed to fetch stats');
+      
+      const data = await response.json();
+      
+      setStats({
+        liquidity: data.liquidity || 0,
+        volume: data.volume || 0,
+        marketCap: data.marketCap || 0,
+        holders: data.holders || 0
+      });
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching token stats:', error);
+      setLoading(false);
+    }
+  };
+
+    fetchStats();
+    
+    // Refresh stats every 60 seconds
+    const interval = setInterval(fetchStats, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format number to compact format (e.g., 185720 -> $185.72k)
+  const formatCurrency = (num) => {
+    if (!num || num === 0) return '$0';
+    
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`;
+    }
+    if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}k`;
+    }
+    return `$${num.toFixed(2)}`;
+  };
+
+  // Format holders count (e.g., 24300 -> 24.3k)
+  const formatHolders = (num) => {
+    if (!num || num === 0) return '0';
+    
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}k`;
+    }
+    return num.toString();
+  };
+
   return (
     <section id="hero" className="relative min-h-[auto] flex items-center justify-center overflow-hidden pb-10">
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -157,6 +223,81 @@ export default function Hero() {
         <Reveal delay={340}>
           <div className="mt-10">
             <AssemblingCA value="LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST" />
+          </div>
+        </Reveal>
+        
+        {/* Stats row */}
+        <Reveal delay={420}>
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            
+            {/* Market Cap */}
+            <div className="stat-card-emerald">
+              <div>
+                <div className="flex items-center justify-center gap-2 text-sm md:text-base uppercase tracking-wider text-white/70 mb-3">
+                  <img src="/icon-marketcap.png" alt="" className="w-6 h-6 md:w-7 md:h-7" />
+                  Market Cap
+                </div>
+                <div className="text-3xl md:text-4xl font-bold text-emerald-300">
+                  {loading ? (
+                    <span className="opacity-50">...</span>
+                  ) : (
+                    formatCurrency(stats.marketCap)
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Liquidity */}
+            <div className="stat-card-cyan">
+              <div>
+                <div className="flex items-center justify-center gap-2 text-sm md:text-base uppercase tracking-wider text-white/70 mb-3">
+                  <img src="/icon-liquidity.png" alt="" className="w-6 h-6 md:w-7 md:h-7" />
+                  Liquidity
+                </div>
+                <div className="text-3xl md:text-4xl font-bold text-cyan-300">
+                  {loading ? (
+                    <span className="opacity-50">...</span>
+                  ) : (
+                    formatCurrency(stats.liquidity)
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Volume */}
+            <div className="stat-card-blue">
+              <div>
+                <div className="flex items-center justify-center gap-2 text-sm md:text-base uppercase tracking-wider text-white/70 mb-3">
+                  <img src="/icon-volume.png" alt="" className="w-6 h-6 md:w-7 md:h-7" />
+                  Volume 24H
+                </div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-300">
+                  {loading ? (
+                    <span className="opacity-50">...</span>
+                  ) : (
+                    formatCurrency(stats.volume)
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Holders */}
+            <div className="stat-card-purple">
+              <div>
+                <div className="flex items-center justify-center gap-2 text-sm md:text-base uppercase tracking-wider text-white/70 mb-3">
+                  <img src="/icon-holders.png" alt="" className="w-6 h-6 md:w-7 md:h-7" />
+                  Holders
+                </div>
+                <div className="text-3xl md:text-4xl font-bold text-purple-300">
+                  {loading ? (
+                    <span className="opacity-50">...</span>
+                  ) : (
+                    formatHolders(stats.holders)
+                  )}
+                </div>
+              </div>
+            </div>
+
           </div>
         </Reveal>
       </div>

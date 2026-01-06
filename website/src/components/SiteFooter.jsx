@@ -18,6 +18,23 @@ export default function SiteFooter() {
       <div className="mt-2 text-[10px] opacity-70 flicker-effect">
               <span className="noise-effect-inline">NO SIGNAL</span>
       </div>
+      {/* Support */}
+      <div className="mt-6 text-xs tracking-wide opacity-70 flicker-effect">
+        <span className="noise-effect-inline">
+          Support:&nbsp;
+          <a
+            href="mailto:admin@testrewardstoken.com"
+            className="
+              bg-gradient-to-r from-cyan-300 to-fuchsia-400
+              bg-clip-text text-transparent
+              hover:from-cyan-200 hover:to-fuchsia-300
+              transition-all
+            "
+          >
+            admin@testrewardstoken.com
+          </a>
+        </span>
+      </div>
     </footer>
   );
 }

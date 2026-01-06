@@ -160,3 +160,52 @@
 
 /* tiny lift */
 .neon-hover:hover { transform: translateY(-1px); }
+
+/* === Stat card gradient borders and glow ===============================*/
+.stat-card-cyan {
+  position: relative;
+  border-radius: 1rem;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(14, 165, 233, 0.4) 100%);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.15), 0 0 60px rgba(0, 212, 255, 0.08);
+}
+
+.stat-card-blue {
+  position: relative;
+  border-radius: 1rem;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(99, 102, 241, 0.4) 100%);
+  box-shadow: 0 0 30px rgba(14, 165, 233, 0.15), 0 0 60px rgba(99, 102, 241, 0.08);
+}
+
+.stat-card-emerald {
+  position: relative;
+  border-radius: 1rem;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(0, 201, 167, 0.4) 100%);
+  box-shadow: 0 0 30px rgba(0, 217, 163, 0.15), 0 0 60px rgba(0, 201, 167, 0.08);
+}
+
+.stat-card-purple {
+  position: relative;
+  border-radius: 1rem;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%);
+  box-shadow: 0 0 30px rgba(192, 132, 252, 0.15), 0 0 60px rgba(168, 85, 247, 0.08);
+}
+
+/* Inner content styling for stat cards */
+.stat-card-cyan > div,
+.stat-card-blue > div,
+.stat-card-emerald > div,
+.stat-card-purple > div {
+  background-color: rgba(7, 11, 22, 0.6);
+  border-radius: 0.875rem;
+  padding: 1.5rem 1.25rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
