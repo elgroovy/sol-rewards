@@ -199,7 +199,7 @@ export function extractRewards(tx) {
       (tt) => tt.fromUserAccount === Constants.kFeeRecipientWalletPubkey && tt.tokenAmount > 0
     );
 
-  // Quick instruction hint: many “rent” ops come with create/close account types
+  // Quick instruction hint: many "rent" ops come with create/close account types
   const hasCreateOrCloseInstr =
     Array.isArray(tx.instructions) &&
     tx.instructions.some((ix) => {
@@ -212,7 +212,6 @@ export function extractRewards(tx) {
     for (const nt of tx.nativeTransfers) {
       if (nt.fromUserAccount !== Constants.kFeeRecipientWalletPubkey) continue;
       if (!nt.toUserAccount || !(nt.amount > 0)) continue;
-
 
       // Skip off-curve destinations (e.g. temp accounts / PDAs).
       // This will skip Jupiter Aggregator swap transactions and similar things
@@ -340,7 +339,10 @@ async function runOnce() {
 
   let before = undefined;
   let done = false;
-  let newestProcessed = null;
+  let latestProcessed = null;  // Track latest tx, regardless of rewards
+  let latestReward = null;     // Track latest tx with rewards (for logging)
+  let txCount = 0;
+  let rewardCount = 0;
 
   while (!done) {
     const sigs = await fetchSignatures(before, 1000);
@@ -355,19 +357,33 @@ async function runOnce() {
         if (!tx || !tx.signature) continue;
 
         const sig = tx.signature;
+        txCount++;
+
+        // Always track the latest transaction processed
+        if (!latestProcessed) {
+          latestProcessed = { sig, slot: tx.slot };
+        }
+
+        // Stop when we reach the last processed transaction
         if (lastSignature && sig === lastSignature) {
           done = true;
           break;
         }
 
+        // Extract and save rewards (if any)
         const rewards = extractRewards(tx);
         if (rewards.length) {
+          rewardCount += rewards.length;
           await saveRewards(rewards);
-          if (!newestProcessed) {
-            newestProcessed = { sig, slot: tx.slot };
+          
+          // Track latest transaction with rewards (for logging)
+          if (!latestReward) {
+            latestReward = { sig, slot: tx.slot };
           }
         }
       }
+      
+      if (done) break;
     }
 
     if (done) break;
@@ -375,10 +391,21 @@ async function runOnce() {
     await sleep(50); // address rate limiting
   }
 
-  if (newestProcessed) {
-    await saveCursor(newestProcessed.sig, newestProcessed.slot);
-    console.log(`[indexer] cursor -> ${newestProcessed.sig}`);
+  // Always save cursor (even if no rewards found)
+  if (latestProcessed) {
+    await saveCursor(latestProcessed.sig, latestProcessed.slot);
+    console.log(`[indexer] cursor -> ${latestProcessed.sig}`);
+    console.log(`[indexer] processed ${txCount} transactions, found ${rewardCount} rewards`);
+    
+    if (latestReward) {
+      console.log(`[indexer] last reward tx: ${latestReward.sig}`);
+    } else {
+      console.log(`[indexer] no rewards found in this batch`);
+    }
+  } else {
+    console.log(`[indexer] no new transactions to process`);
   }
+  
   console.log(`[indexer] end   ${new Date().toISOString()}`);
 }
 
