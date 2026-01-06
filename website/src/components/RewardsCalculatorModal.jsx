@@ -1,5 +1,3 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
-import { Constants } from "../../../constants.js";
 /**
  * RewardsCalculatorModal
  * - Calculator tab: numeric formatting, quick-sets, simulated volume, live fetch.
@@ -11,6 +9,9 @@ import { Constants } from "../../../constants.js";
  *   apiBase?: string ("" or undefined = same-origin)
  *   defaultUseLive?: boolean
  */
+
+import React, { useMemo, useRef, useState, useEffect } from "react";
+import { Config } from "../utils/config.js";
 
 const DEMO_METRICS = {
   volumeUSD: 1_000_000,      // 24h volume (USD)
@@ -106,7 +107,7 @@ function Meta({ label, value }) {
 export default function RewardsCalculatorModal({
   open,
   onClose,
-  apiBase = Constants.kBackendUrl,
+  apiBase = Config.backendUrl,
   defaultUseLive = false,
 }) {
   const [view, setView] = useState("calc"); // 'calc' | 'wallet'

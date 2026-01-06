@@ -3,7 +3,7 @@ import useParticleField from "../hooks/useParticleField";
 import GlitchTitle from "./GlitchTitle";
 import Reveal from "./Reveal";
 import AssemblingCA from "./AssemblingCA";
-import { Constants } from "../../../constants.js";
+import { Config } from "../utils/config.js";
 
 export default function Hero() {
   const canvasRef = useParticleField();
@@ -21,11 +21,11 @@ export default function Hero() {
   useEffect(() => {
     const fetchStats = async () => {
     try {
-      const response = await fetch(`${Constants.kBackendUrl}/metrics`);
+      const response = await fetch(`${Config.backendUrl}/metrics`);
       if (!response.ok) throw new Error('Failed to fetch stats');
       
       const data = await response.json();
-      
+    
       setStats({
         liquidity: data.liquidity || 0,
         volume: data.volume || 0,

@@ -19,6 +19,7 @@ import {
 import { swapToken } from './jupiter-swap.js';
 import { loadKeypairFromFile } from "./keypair-utils.js";
 import { Constants } from './constants.js';
+import { Config } from './config.js';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import WebSocket from 'ws';
@@ -29,12 +30,12 @@ let jackpotCheckInterval = Constants.kJackpotCheckInterval;
 const SIMULATION_MODE = false; // Set to false for production
 
 // Connection to the cluster
-const connection = new Connection(/*clusterApiUrl(Constants.kSolanaNetwork)*/Constants.kHeliusRPCEndpoint, "confirmed");
+const connection = new Connection(Config.heliusMainnetUrl, "confirmed");
 
 async function getLastHoldersSnapshot()
 {
     try {
-        const response = await fetch(Constants.kBackendUrl + "/jackpots/holders", {
+        const response = await fetch(Config.backendUrl + "/jackpots/holders", {
             method: "GET",
             headers: {
             "Content-Type": "application/json"
@@ -57,7 +58,7 @@ async function updateHoldersSnapshot(addresses)
 {
     try {
         // Update the holders snapshot and retrieve the new holders
-        const response = await fetch(Constants.kBackendUrl + "/jackpots/holders", {
+        const response = await fetch(Config.backendUrl + "/jackpots/holders", {
             method: "PUT",
             headers: {
             "Content-Type": "application/json"
@@ -108,7 +109,7 @@ async function sendEarnedSolToWallets(walletsToSendTo)
 async function notifyTelegramBot(notificationPayloud)
 {
     try {
-        const response = await fetch(Constants.kBackendUrl + "/jackpots/notify", {
+        const response = await fetch(Config.backendUrl + "/jackpots/notify", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -405,7 +406,7 @@ async function handleTreasuryAutoDistribute() {
 
     const subscriptionMap = new Map(); // map to store subscription IDs
     
-    const ws = new WebSocket(Constants.kHeliusRPCEndpoint);
+    const ws = new WebSocket(Config.heliusMainnetUrl);
 
     ws.on('open', async () => {
         console.log("WebSocket connection established. Watching Treasury account for deposits...");

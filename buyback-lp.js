@@ -17,10 +17,11 @@ import { swapToken } from "./jupiter-swap.js";
 import { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import BN from "bn.js";
 import { Constants } from "./constants.js";
+import { Config } from './config.js';
 
 async function runBuyback() {
     try {
-        const connection = new Connection(Constants.kHeliusRPCEndpoint, "confirmed");
+        const connection = new Connection(Config.heliusMainnetUrl, "confirmed");
         const buybackKeypair = await loadKeypairFromFile(Constants.kBuybackWalletKeyFile);
 
         // Check SOL balance

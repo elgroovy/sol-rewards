@@ -1,6 +1,7 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Constants } from '../../constants.js';
+import { Config } from '../../config.js';
 import fetch from 'node-fetch';
 
 // Weighting method for market cap and price calculations.
@@ -14,7 +15,7 @@ const DEXSCREENER_TOKEN_API_URL = `https://api.dexscreener.com/token-pairs/v1/so
 
 export async function getTokenMetrics(req, res) {
     try {
-        const connection = new Connection(Constants.kHeliusRPCEndpoint);
+        const connection = new Connection(Config.heliusMainnetUrl);
         const tokenMintPublicKey = new PublicKey(Constants.kTokenMintPubkey);
 
         // Fetch token supply
@@ -109,7 +110,7 @@ export async function getTokenMetrics(req, res) {
         // First try using Helius getTokenAccounts method
         let holders = 0;
         try {
-            const response = await fetch(Constants.kHeliusRPCEndpoint, {
+            const response = await fetch(Config.heliusMainnetUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

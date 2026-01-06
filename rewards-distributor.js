@@ -21,6 +21,7 @@ import {
 import { loadKeypairFromFile } from "./keypair-utils.js";
 import { swapToken } from './jupiter-swap.js';
 import { Constants } from './constants.js';
+import { Config } from './config.js';
 import { collectFees } from './fee-collector.js';
 import fetch from 'node-fetch';
 
@@ -211,7 +212,7 @@ async function notifyTelegramBot(walletsData, transactionUrl)
     };
 
     try {
-        const response = await fetch(Constants.kBackendUrl + "/rewards/notifications", {
+        const response = await fetch(Config.backendUrl + "/rewards/notify", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -250,7 +251,7 @@ async function distributeRewards() {
         const mint = new PublicKey(Constants.kTokenMintPubkey); 
 
         // Connection to the cluster
-        const connection = new Connection(Constants.kHeliusRPCEndpoint, "confirmed");
+        const connection = new Connection(Config.heliusMainnetUrl, "confirmed");
 
          // Collect withheld fees first
         console.log("\n--- Collecting Withheld Fees ---");

@@ -1,10 +1,6 @@
 
 export const Constants = {
     kSolanaNetwork : "mainnet-beta",
-    kHeliusRPCEndpoint : "https://mainnet.helius-rpc.com/?api-key=401a52b1-42d6-45d9-ab64-a29432790474",
-    kHeliusDevnetRPCEndpoint : "https://devnet.helius-rpc.com/?api-key=401a52b1-42d6-45d9-ab64-a29432790474",
-
-    kBackendUrl: "https://api.testrewardstoken.com" /*"http://localhost:3000"*/,
 
     kWSOLMint: "So11111111111111111111111111111111111111112",
 
