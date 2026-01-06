@@ -308,10 +308,10 @@ async function distributeRewards() {
         // Check if we have enough tokens to distribute
         const tokenAmount = await connection.getTokenAccountBalance(tokenAccount.address);
         const tokenBalance = tokenAmount.value.amount;
-        /*if (tokenBalance < BigInt(Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals)) {
+        if (tokenBalance < BigInt(Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals)) {
             console.log("Not enough tokens to distribute rewards");
             return;
-        }*/
+        }
 
         // Calculate the amount of tokens to burn
         let burnAmount = 0;
