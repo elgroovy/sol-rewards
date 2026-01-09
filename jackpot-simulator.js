@@ -347,14 +347,13 @@ async function getCurrentHoldersSnapshot()
             ],
         });
         
-        // Exclude Fee, Treasury, Jackpot and Burn wallets from the list of holders
-        const excludedWallets = new Set([
-            Constants.kFeeRecipientWalletPubkey,
+        // Manual exclusions of certain system wallets
+        const MANUAL_EXCLUSIONS = new Set([
             Constants.kTreasuryWalletPubkey,
-            jackpotKeypair.publicKey.toBase58(), // Jackpot wallet
+            Constants.kFeeRecipientWalletPubkey,
+            Constants.kBuybackWalletPubkey,
+            Constants.kJackpotWalletPubKey,
             Constants.kBurnWalletPubkey,
-            Constants.kRaydiumVaultAuthority2, // Raydium pool
-            Constants.kMeteoraTRTWSOLPool // Meteora pool
         ]);
 
         // Grab all addresses that meet the minimum holding requirement
@@ -367,8 +366,21 @@ async function getCurrentHoldersSnapshot()
             );
 
             const accountPubkey = account.owner.toBase58();
+
+            // Skip manual exclusions
+            if (MANUAL_EXCLUSIONS.has(accountPubkey)) {
+                continue;
+            }
+
+            // Skip PDAs (off-curve addresses, like pool vaults, program accounts etc.)
+            if (!PublicKey.isOnCurve(account.owner.toBytes())) {
+                console.log(`Skipping ${accountPubkey} - off-curve (likely a pool/PDA)`);
+                continue;
+            }
+
+            // Check token balance threshold
             const tokenAmount = Number(account.amount) / Math.pow(10, Constants.kTokenDecimals);
-            if (excludedWallets.has(accountPubkey) || tokenAmount < Constants.kJackpotEligibilityMinHolding) {
+            if (tokenAmount < Constants.kJackpotEligibilityMinHolding) {
                 continue;
             }
 
