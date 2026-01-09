@@ -88,15 +88,6 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             },
         ],
     });
-    
-    // Exclude Fee, Treasury, and Burn wallets from the list of holders
-    const excludedWallets = new Set([
-        /*Constants.kTreasuryWalletPubkey,*/
-        ownerKeypair.publicKey.toBase58(),
-        Constants.kBurnWalletPubkey,
-        Constants.kRaydiumVaultAuthority2, // Raydium pool
-        Constants.kMeteoraTRTWSOLPool, // Meteora pool
-    ]);
 
     // Handle swap if we are using the reward token
     let rewardTokenBalance = null;
@@ -130,6 +121,19 @@ async function distributeToHolders(connection, totalLamportsToSend) {
         balanceMap = await getBalances(connection, ownerPubkeys);
     }
 
+    // Manual exclusions of certain system wallets
+    const MANUAL_EXCLUSIONS = new Set([
+        //Constants.kTreasuryWalletPubkey,
+        Constants.kFeeRecipientWalletPubkey,
+        Constants.kBuybackWalletPubkey,
+        Constants.kJackpotWalletPubKey,
+        Constants.kBurnWalletPubkey,
+    ]);
+
+    let skippedPDA = 0;
+    let skippedManual = 0;
+    let skippedBalance = 0;
+
     const instructions = [];
     const walletsData = [];
 
@@ -140,13 +144,30 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             accountInfo.account,
             TOKEN_2022_PROGRAM_ID
         );
-        
-        const tokenAmount = Number(account.amount) / Math.pow(10, Constants.kTokenDecimals);
-        if (excludedWallets.has(account.owner.toBase58()) || tokenAmount < Constants.kRewardMinHolding)
+
+        const ownerAddress = account.owner.toBase58();
+
+         // Skip manual exclusions
+        if (MANUAL_EXCLUSIONS.has(ownerAddress)) {
+            skippedManual++;
             continue;
+        }
+        
+        // Skip PDAs (off-curve addresses, like pool vaults, program accounts etc.)
+        if (!PublicKey.isOnCurve(account.owner.toBytes())) {
+            console.log(`Skipping ${ownerAddress} - off-curve (likely a pool/PDA)`);
+            skippedPDA++;
+            continue;
+        }
+
+        // Check token balance threshold
+        const tokenAmount = Number(account.amount) / Math.pow(10, Constants.kTokenDecimals);
+        if (tokenAmount < Constants.kRewardMinHolding) {
+            skippedBalance++;
+            continue;
+        }
 
         if (Constants.kRewardTokenMintPubkey.length > 0) {
-
             // Get the associated token account for the holder
             const holderTokenAccount = await getOrCreateAssociatedTokenAccount(
                 connection,
@@ -212,6 +233,9 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             });
         }
     }
+
+    console.log(`Filtered: ${skippedPDA} PDAs, ${skippedManual} manual exclusions, ${skippedBalance} below threshold balance`);
+    console.log(`Eligible holders: ${instructions.length}`);
 
     let transactionUrl = "";
 
