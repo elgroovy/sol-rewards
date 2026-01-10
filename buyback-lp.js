@@ -18,9 +18,54 @@ import { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import BN from "bn.js";
 import { Constants } from "./constants.js";
 import { Config } from './config.js';
+import fetch from 'node-fetch';
+
+// Set to true to simulate buyback (sends fake notification)
+const SIMULATION_MODE = false;
+
+async function notifyTelegramBot(notificationPayload)
+{
+    try {
+        const response = await fetch(Config.backendUrl + "/rewards/notify", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(notificationPayload)
+        });
+
+        if (!response.ok) {
+            console.error(`Failed to send notification. Status: ${response.status}, Message: ${await response.text()}`);
+        } else {
+            console.log("Notification sent successfully.");
+        }
+    } catch (error) {
+        console.error("Error sending notification:", error);
+    }
+}
+
+async function sendBuybackNotification(solUsed, trtBought, trtInjected, solPaired, txSignature)
+{
+    const solscanUrl = `https://solscan.io/tx/${txSignature}`;
+    const message = `✅ *Status: Complete*\n\n⚡ Buyback: ${solUsed.toFixed(4)} SOL → ${trtBought.toFixed(2)} TRT\n🔒 LP Added: ${trtInjected.toFixed(2)} TRT + ${solPaired.toFixed(4)} SOL\n\n[Transaction](${solscanUrl})`;
+
+    await notifyTelegramBot({
+        messageType: "simple",
+        messageText: message,
+        mediaUrl: 'http://ipfs.io/ipfs/bafkreieycmc4qxey2rdjsrrz6siah2j7rzpnlb5cxhy32zcwubtgigrnzq',
+        isAnimated: true
+    });
+}
 
 async function runBuyback() {
     try {
+        // Simulation mode - just send a mock notification
+        if (SIMULATION_MODE) {
+            console.log("🔸 SIMULATION MODE - Sending mock notification 🔸");
+            await sendBuybackNotification(0.5000, 12345.67, 12345.67, 0.4500, "SIMULATED_TX_" + Date.now());
+            return;
+        }
+
         const connection = new Connection(Config.heliusMainnetUrl, "confirmed");
         const buybackKeypair = await loadKeypairFromFile(Config.buybackKeyFile);
 
@@ -61,6 +106,9 @@ async function runBuyback() {
             return;
         }
 
+        // Store SOL used for buyback
+        const solUsedForBuyback = halfLamports / LAMPORTS_PER_SOL;
+
         const trtBalanceInfo = await connection.getTokenAccountBalance(new PublicKey(Constants.kBuybackTokenAccount), "confirmed");
         const trtAmount = new BN(trtBalanceInfo.value.amount);
         if (trtAmount.isZero()) {
@@ -68,7 +116,10 @@ async function runBuyback() {
             return;
         }
 
-        console.log(`TRT balance: ${trtBalanceInfo.value.uiAmount}`);
+        // Store TRT bought
+        const trtBought = trtBalanceInfo.value.uiAmount;
+
+        console.log(`TRT balance: ${trtBought}`);
 
         // Get pool state
         const cpAmm = new CpAmm(connection); // initialize CpAmm SDK
@@ -103,6 +154,9 @@ async function runBuyback() {
         console.log(`Liquidity delta: ${depositQuote.liquidityDelta.toString()}`);
         console.log(`Output amount needed: ${depositQuote.outputAmount.toString()}`);
         console.log(`SOL needed: ${depositQuote.outputAmount.toNumber() / LAMPORTS_PER_SOL} SOL`);
+
+        // Store SOL paired for liquidity
+        const solPairedForLiquidity = depositQuote.outputAmount.toNumber() / LAMPORTS_PER_SOL;
 
         // Check if we have enough SOL to cover liquidity + fees
         const solForLiquidity = halfLamports; // the second half reserved for liquidity
@@ -220,6 +274,10 @@ async function runBuyback() {
         const addLiqSig = await sendAndConfirmTransaction(connection, addLiquidityTx, [buybackKeypair]);
 
         console.log("✅ Liquidity added to Meteora DAMM v2 pool:", addLiqSig);
+
+        // Send Telegram notification
+        await sendBuybackNotification(solUsedForBuyback, trtBought, trtBought, solPairedForLiquidity, addLiqSig);
+
     } catch (err) {
         console.error("Error in buyback process:", err);
     }
