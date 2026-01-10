@@ -13,7 +13,7 @@ export const pool = mysql.createPool({
 });
 
 export function query(sql, params) {
-  return pool.execute(sql, params);
+  return pool.query(sql, params);
 }
 
 export function getConnection() {

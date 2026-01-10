@@ -66,15 +66,18 @@ async function updateHoldersSnapshot(addresses)
             body: JSON.stringify({ addresses: addresses })
         });
 
-        if (!response.ok) {
-            console.error(`Failed to update holders snapshot. Status: ${response.status}, Message: ${await response.text()}`);
-        } else {
-            console.log("Holders snapshot updated successfully.");
-        }
         const responseData = await response.json();
-        return responseData.newHolders;
+
+        if (!response.ok) {
+            console.error(`Failed to update holders snapshot. Status: ${response.status}, Message: ${JSON.stringify(responseData)}`);
+            return []; // return empty array on error
+        }
+        
+        console.log("Holders snapshot updated successfully.");
+        return responseData.newHolders || [];
     } catch (error) {
         console.error("Failed to update holders snapshot:", error);
+        return []; // return empty array on error
     }
 }
 
