@@ -96,7 +96,7 @@ export async function updateEligibleHolders(req, res) {
 
         // Create a temporary table.
         await db.query('DROP TEMPORARY TABLE IF EXISTS temp_snapshot;');
-        await db.query('CREATE TEMPORARY TABLE temp_snapshot (wallet_address VARCHAR(255) UNIQUE)');
+        await db.query('CREATE TEMPORARY TABLE temp_snapshot (wallet_address VARCHAR(255) UNIQUE) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci');
 
         // Insert snapshot into temporary table.
         const snapshotValues = /*uniqueAddresses*/snapshotAddresses.map((address) => [address]);
