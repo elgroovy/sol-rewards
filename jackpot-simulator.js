@@ -106,7 +106,7 @@ async function sendEarnedSolToWallets(walletsToSendTo)
     throw new Error("No instructions to send SOL to holders.");
 }
 
-async function notifyTelegramBot(notificationPayloud)
+async function notifyTelegramBot(notificationPayload)
 {
     try {
         const response = await fetch(Config.backendUrl + "/jackpots/notify", {
@@ -114,7 +114,7 @@ async function notifyTelegramBot(notificationPayloud)
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(notificationPayloud)
+            body: JSON.stringify(notificationPayload)
         });
 
         if (!response.ok) {

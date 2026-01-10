@@ -254,20 +254,19 @@ async function distributeToHolders(connection, totalLamportsToSend) {
         console.log(`Batch ${batchIndex} sent. Signature: ${transactionUrl}`);
 
         console.log("Sending notification to Telegram bot...");
-        await notifyTelegramBot(walletsData.slice(i, i + Constants.kBatchSize), transactionUrl);
+
+        await notifyTelegramBot({
+            messageType: "rewards",
+            wallets: walletsData.slice(i, i + Constants.kBatchSize),
+            transactionUrl: transactionUrl
+        });
     }
 
     console.log(`Submitted ${instructions.length} transfer TXs).`);
 }
 
-async function notifyTelegramBot(walletsData, transactionUrl)
+async function notifyTelegramBot(notificationPayload)
 {
-    // Send notification to the API
-    const notificationPayload = {
-        wallets: walletsData,
-        transactionUrl: transactionUrl
-    };
-
     try {
         const response = await fetch(Config.backendUrl + "/rewards/notify", {
             method: "POST",
