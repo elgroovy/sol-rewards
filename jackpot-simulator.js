@@ -666,8 +666,18 @@ async function handleJackpots() {
         } else {
             console.log("Insufficient balance to draw the jackpot.");
             jackpotCheckInterval = Math.min(jackpotCheckInterval * 2, 8 * 60); // 8 hours max
-            const nextCheckDelayText = jackpotCheckInterval >= 60 ? `${Math.floor(jackpotCheckInterval / 60)} hour(s)` : `${jackpotCheckInterval} mins`; 
-            await sendSimpleMessage(`Jackpot draw requires more SOL.\nCurrent balance: ${balanceToUse.toFixed(3)} SOL.\nCurrent threshold: ${Constants.kJackpotThreshold} SOL.\nI'll check again in ${nextCheckDelayText}!`);
+
+            const hours = Math.floor(jackpotCheckInterval / 60);
+            const mins = jackpotCheckInterval % 60;
+
+            let nextCheckDelayText;
+            if (jackpotCheckInterval >= 60) {
+                nextCheckDelayText = `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+            } else {
+                nextCheckDelayText = `${mins} ${mins === 1 ? 'min' : 'mins'}`;
+            }
+            
+            await sendSimpleMessage(`Insufficient balance for jackpot draw.\nBalance: ${balanceToUse.toFixed(3)} / ${Constants.kJackpotThreshold} SOL.\nNext check in ${nextCheckDelayText}.`);
         }
     } catch (error) {
         console.error("Error handling jackpots:", error);

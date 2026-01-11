@@ -43,7 +43,7 @@ export async function notify(req, res) {
 
     let promise;
     if (messageType === 'simple') {
-        let formattedMessage = `🎲 *JackBOT NoTiFiCaTioN* 🎲\n\n`;
+        let formattedMessage = `🎲 *JackBOT Alert* 🎲\n\n`;
         formattedMessage += `${messageText}`;
 
         // Send image/GIF along with the formatted text
