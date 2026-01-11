@@ -73,7 +73,7 @@ export default function Hero() {
   };
 
   return (
-    <section id="hero" className="relative min-h-[auto] flex items-center justify-center overflow-hidden pb-10">
+    <section id="hero" className="relative min-h-[auto] flex items-center justify-center overflow-visible pb-10">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <canvas ref={canvasRef} />
       </div>
@@ -228,16 +228,16 @@ export default function Hero() {
         
         {/* Stats row */}
         <Reveal delay={420}>
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             
             {/* Market Cap */}
             <div className="stat-card-emerald">
               <div>
-                <div className="flex items-center justify-center gap-2 text-sm md:text-base uppercase tracking-wider text-white/70 mb-3">
-                  <img src="/icon-marketcap.png" alt="" className="w-6 h-6 md:w-7 md:h-7" />
+                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
+                  <img src="/icon-marketcap.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
                   Market Cap
                 </div>
-                <div className="text-3xl md:text-4xl font-bold text-emerald-300">
+                <div className="text-2xl md:text-3xl font-bold text-emerald-300">
                   {loading ? (
                     <span className="opacity-50">...</span>
                   ) : (
@@ -250,11 +250,11 @@ export default function Hero() {
             {/* Liquidity */}
             <div className="stat-card-cyan">
               <div>
-                <div className="flex items-center justify-center gap-2 text-sm md:text-base uppercase tracking-wider text-white/70 mb-3">
-                  <img src="/icon-liquidity.png" alt="" className="w-6 h-6 md:w-7 md:h-7" />
+                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
+                  <img src="/icon-liquidity.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
                   Liquidity
                 </div>
-                <div className="text-3xl md:text-4xl font-bold text-cyan-300">
+                <div className="text-2xl md:text-3xl font-bold text-cyan-300">
                   {loading ? (
                     <span className="opacity-50">...</span>
                   ) : (
@@ -267,11 +267,11 @@ export default function Hero() {
             {/* Volume */}
             <div className="stat-card-blue">
               <div>
-                <div className="flex items-center justify-center gap-2 text-sm md:text-base uppercase tracking-wider text-white/70 mb-3">
-                  <img src="/icon-volume.png" alt="" className="w-6 h-6 md:w-7 md:h-7" />
+                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
+                  <img src="/icon-volume.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
                   Volume 24H
                 </div>
-                <div className="text-3xl md:text-4xl font-bold text-blue-300">
+                <div className="text-2xl md:text-3xl font-bold text-blue-300">
                   {loading ? (
                     <span className="opacity-50">...</span>
                   ) : (
@@ -284,11 +284,11 @@ export default function Hero() {
             {/* Holders */}
             <div className="stat-card-purple">
               <div>
-                <div className="flex items-center justify-center gap-2 text-sm md:text-base uppercase tracking-wider text-white/70 mb-3">
-                  <img src="/icon-holders.png" alt="" className="w-6 h-6 md:w-7 md:h-7" />
+                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
+                  <img src="/icon-holders.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
                   Holders
                 </div>
-                <div className="text-3xl md:text-4xl font-bold text-purple-300">
+                <div className="text-2xl md:text-3xl font-bold text-purple-300">
                   {loading ? (
                     <span className="opacity-50">...</span>
                   ) : (
@@ -300,6 +300,15 @@ export default function Hero() {
 
           </div>
         </Reveal>
+      </div>
+
+      {/* Jackpot character - sits in the gap between Hero and Utility sections */}
+      <div className="absolute bottom-0 right-[5%] md:right-[8%] lg:right-[10%] translate-y-[110%] z-10 pointer-events-none">
+        <img 
+          src="/jackpot-character.gif" 
+          alt="Jackpot" 
+          className="w-28 md:w-48 lg:w-56 h-auto drop-shadow-[0_0_25px_rgba(255,215,0,0.2)]"
+        />
       </div>
     </section>
   );

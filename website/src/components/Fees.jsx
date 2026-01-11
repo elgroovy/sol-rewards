@@ -15,8 +15,27 @@ export default function Fees() {
   const [calcOpen, setCalcOpen] = useState(false);
 
   return (
-    <section id="fees" className="py-20 relative">
-      <div className="mx-auto max-w-6xl px-6 text-center">
+    <section id="fees" className="py-20 relative overflow-visible">
+      <div className="mx-auto max-w-6xl px-6 text-center relative overflow-visible">
+        
+        {/* Animated money character - desktop: positioned on the left */}
+        <div className="hidden md:block absolute -top-16 left-4 lg:left-16 z-10 pointer-events-none">
+          <img 
+            src="/money-character.gif" 
+            alt="Money character"
+            className="w-36 lg:w-44 h-auto"
+          />
+        </div>
+
+        {/* Animated money character - mobile: centered above title */}
+        <div className="md:hidden flex justify-center mb-4 -mt-8">
+          <img 
+            src="/money-character.gif" 
+            alt="Money character"
+            className="w-28 h-auto"
+          />
+        </div>
+
         <div className="text-center mb-8">
           <PhysicsTitle
             text="FEE STRUCTURE"
@@ -45,7 +64,7 @@ export default function Fees() {
                 className="relative z-10 pointer-events-none w-full h-auto"
               />
 
-              {/* ONE button, pinned to the TV’s right edge */}
+              {/* ONE button, pinned to the TV's right edge */}
               <div
                 className="md:absolute md:top-[10%] z-20 mt-4 md:mt-0 flex md:block justify-center"
                 style={{ left: "calc(100% + 24px)" }} // 24px gap from TV
