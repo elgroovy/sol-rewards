@@ -14,13 +14,34 @@ export default function Fees() {
 
   const [calcOpen, setCalcOpen] = useState(false);
   const [showThumbsUp, setShowThumbsUp] = useState(false);
+  const [showMiddleFinger, setShowMiddleFinger] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
 
   const handleFingerClick = () => {
-    setShowThumbsUp(true);
-    setTimeout(() => {
-      setShowThumbsUp(false);
-    }, 1000);
+    // If thumbs up or middle finger is showing, reset counter and do nothing
+    if (showThumbsUp || showMiddleFinger) {
+      setClickCount(0);
+      return;
+    }
+    
+    const newCount = clickCount + 1;
+    
+    if (newCount >= 5) {
+      // Show middle finger after 5 clicks on pointing finger
+      setShowMiddleFinger(true);
+      setClickCount(0); // Reset counter
+      setTimeout(() => {
+        setShowMiddleFinger(false);
+      }, 2000);
+    } else {
+      // Show thumbs up as before
+      setClickCount(newCount);
+      setShowThumbsUp(true);
+      setTimeout(() => {
+        setShowThumbsUp(false);
+      }, 1000);
+    }
   };
 
   const handleMoneyClick = () => {
@@ -30,6 +51,19 @@ export default function Fees() {
         setIsFlipping(false);
       }, 600); // Match animation duration
     }
+  };
+
+  // Determine which hand image to show
+  const getHandImage = () => {
+    if (showMiddleFinger) return "/middle_finger_hand.png";
+    if (showThumbsUp) return "/thumbs_up_hand.png";
+    return "/pointing_hand.png";
+  };
+
+  const getHandAlt = () => {
+    if (showMiddleFinger) return "Middle finger";
+    if (showThumbsUp) return "Thumbs up";
+    return "Click here";
   };
 
   return (
@@ -133,8 +167,8 @@ export default function Fees() {
                     }}
                   >
                     <img 
-                      src={showThumbsUp ? "/thumbs_up_hand.png" : "/pointing_hand.png"}
-                      alt={showThumbsUp ? "Thumbs up" : "Click here"}
+                      src={getHandImage()}
+                      alt={getHandAlt()}
                       className="w-16 h-auto transition-opacity duration-200"
                       style={{
                         filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
