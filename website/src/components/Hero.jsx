@@ -134,7 +134,7 @@ export default function Hero() {
             className="mt-5 text-lg md:text-xl text-white/80 leading-relaxed px-4 sm:px-0 whitespace-normal break-words"
             style={{ textWrap: "balance" }}
           >
-            It started as a test, but it ended up being the best reward token on Solana
+            Started as a test, became the most rewarding token on Solana
           </p>
         </Reveal>
 
