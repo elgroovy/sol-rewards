@@ -240,7 +240,7 @@ export function extractRewards(tx) {
     }
   }
 
-  // --- SPL token transfers (keep as-is) ---
+  // --- SPL token transfers ---
   if (Array.isArray(tx.tokenTransfers)) {
     for (const tt of tx.tokenTransfers) {
       if (tt.fromUserAccount !== Constants.kFeeRecipientWalletPubkey) continue;
@@ -257,7 +257,7 @@ export function extractRewards(tx) {
         wallet: tt.toUserAccount,
         assetType: "SPL",
         tokenMint: tt.mint,
-        amountRaw: String(tt.tokenAmount),
+        amountRaw: String(tt.rawTokenAmount),
         decimals: Number.isFinite(tt.decimals) ? tt.decimals : 0,
       });
     }
