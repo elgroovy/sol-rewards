@@ -57,51 +57,70 @@ const toNumber = (s) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-// ---------- small UI bits ----------
-function NeonCard({ title, value }) {
+// ---------- THEMED COMPONENTS ----------
+
+function StatCard({ title, value, accent = "amber" }) {
+  const accents = {
+    amber: {
+      border: "linear-gradient(135deg, #F5B971, #C4B5FD)",
+      glow: "rgba(245,185,113,.35)",
+      titleColor: "rgba(245,185,113,0.8)",
+    },
+    teal: {
+      border: "linear-gradient(135deg, #5EEAD4, #60A5FA)",
+      glow: "rgba(94,234,212,.35)",
+      titleColor: "rgba(94,234,212,0.8)",
+    },
+  };
+
+  const a = accents[accent];
+
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-4 md:p-5 text-left"
+      className="relative rounded-2xl p-[1.5px]"
       style={{
-        border: "1px solid rgba(255,255,255,0.12)",
-        background:
-          "linear-gradient(135deg, rgba(0,0,0,0.55), rgba(255,255,255,0.04))",
-        boxShadow:
-          "0 0 0 1px rgba(255,255,255,0.06) inset, 0 10px 40px rgba(0,0,0,0.4)",
+        background: a.border,
+        boxShadow: `0 0 40px ${a.glow}`,
       }}
     >
-      <div className="text-xs uppercase tracking-wide text-white/70">{title}</div>
-      <div
-        className="mt-1 text-2xl md:text-3xl font-bold"
-        style={{
-          textShadow:
-            "0 0 10px rgba(0,255,255,.35), 0 0 18px rgba(255,0,255,.25)",
-        }}
-      >
-        {value}
+      <div className="rounded-[14px] bg-[rgba(11,18,32,.75)] px-5 py-4 text-center">
+        <div 
+          className="text-xs uppercase tracking-wide"
+          style={{ color: a.titleColor }}
+        >
+          {title}
+        </div>
+        <div className="mt-1 text-2xl md:text-3xl font-semibold text-[#E6EAF2]">
+          {value}
+        </div>
       </div>
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={{
-          border: "1px solid transparent",
-          background:
-            "linear-gradient(#0000,#0000), linear-gradient(90deg, rgba(0,255,255,.35), rgba(255,0,255,.35))",
-          backgroundOrigin: "border-box",
-          backgroundClip: "padding-box, border-box",
-          opacity: 0.5,
-        }}
-      />
     </div>
   );
 }
 
 function Meta({ label, value }) {
   return (
-    <div className="rounded-xl border border-white/12 bg-black/30 px-3 py-2">
-      <div className="text-[11px] uppercase tracking-wide text-white/50">{label}</div>
-      <div className="text-sm font-medium">{value}</div>
+    <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+      <div className="text-[11px] uppercase tracking-wide text-[#9AA4B2]">{label}</div>
+      <div className="text-sm font-medium text-[#E6EAF2]">{value}</div>
     </div>
   );
+}
+
+// Asset color helper - alternates colors by index
+const ASSET_COLORS = [
+  "#e3f280ff", // Sky Blue (Replaces Cyan)
+  "#A5B4FC", // Indigo-Lavender (Replaces deep purple)
+  "#BAE6FD", // Light Azure (Bridge between blues)
+  "#C4B5FD", // Soft Violet (Replaces deep Fuchsia)
+  "#99F6E4", // Soft Mint (Replaces harsh Teal)
+  "#E0E7FF", // Cool White/Grey (Neutral anchor)
+  "#DDD6FE", // Dusty Purple (Subtle variation)
+  "#F0F9FF", // Ice Blue (Highlight)
+];
+
+function getAssetColor(index) {
+  return ASSET_COLORS[index % ASSET_COLORS.length];
 }
 
 export default function RewardsCalculatorModal({
@@ -297,7 +316,7 @@ export default function RewardsCalculatorModal({
       loadHistory(a, 1);
     } catch (e) {
       setEarnings(null);
-      setEarnError("Couldn’t load earnings for this address.");
+      setEarnError("Couldn't load earnings for this address.");
       setEvents([]);
       setEventsTotal(0);
       setEventsPage(1);
@@ -324,48 +343,50 @@ export default function RewardsCalculatorModal({
       role="dialog"
       aria-modal="true"
     >
-      {/* panel glass look */}
+      {/* Panel with glass look */}
       <div
-        className="relative w-full max-w-4xl rounded-[28px] p-6 md:p-8 border shadow-[0_30px_80px_rgba(0,0,0,.45)] backdrop-blur-xl"
+        className="relative w-full max-w-4xl rounded-[28px] p-6 md:p-8 border shadow-[0_30px_80px_rgba(0,0,0,.45)]"
         style={{
-          overflow: "auto", // allow panel content to scroll on small screens
-          borderColor: "rgba(255,255,255,0.22)",
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06))",
+          overflow: "auto",
+          borderColor: "rgba(255,255,255,0.20)",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05))",
           WebkitBackdropFilter: "blur(14px) saturate(140%)",
           backdropFilter: "blur(14px) saturate(140%)",
-          boxShadow:
-            "inset 0 0 0 1px rgba(255,255,255,0.08), 0 30px 80px rgba(0,0,0,0.45)",
-          // cap height so the close button and content are reachable. The div itself scrolls
+          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 30px 80px rgba(0,0,0,0.45)",
           maxHeight: "calc(100dvh - 2.5rem)",
         }}
       >
-        {/* close */}
+        {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border bg-white/10 hover:bg-white/15 transition z-[2]"
-          style={{ borderColor: "rgba(255,255,255,0.22)" }}
+          className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20 transition z-[2] text-[#E6EAF2]"
           aria-label="Close"
         >
           ✕
         </button>
 
-        {/* title + tabs  */}
+        {/* Title + tabs */}
         <div className="mb-6 flex items-center justify-between gap-3 pr-12">
-          <h3 className="text-xl md:text-2xl font-bold tracking-wide">Rewards Calculator</h3>
+          <h3 className="text-xl md:text-2xl font-bold tracking-wide text-[#E6EAF2]">
+            Rewards Calculator
+          </h3>
           <div className="rounded-full border border-white/20 bg-white/10 p-1 flex mr-2">
             <button
               onClick={() => setView("calc")}
-              className={`px-3 py-1.5 rounded-full text-sm ${
-                view === "calc" ? "bg-white/25 font-semibold" : "text-white/80 hover:bg-white/15"
+              className={`px-3 py-1.5 rounded-full text-sm transition ${
+                view === "calc"
+                  ? "bg-[#F5B971]/20 text-[#F5B971] font-semibold"
+                  : "text-[#9AA4B2] hover:bg-white/10"
               }`}
             >
               Calculator
             </button>
             <button
               onClick={() => setView("wallet")}
-              className={`px-3 py-1.5 rounded-full text-sm ${
-                view === "wallet" ? "bg-white/25 font-semibold" : "text-white/80 hover:bg-white/15"
+              className={`px-3 py-1.5 rounded-full text-sm transition ${
+                view === "wallet"
+                  ? "bg-[#F5B971]/20 text-[#F5B971] font-semibold"
+                  : "text-[#9AA4B2] hover:bg-white/10"
               }`}
             >
               My Earnings
@@ -377,14 +398,14 @@ export default function RewardsCalculatorModal({
           // ---------------- CALCULATOR ----------------
           <div className="grid md:grid-cols-2 gap-6">
             {/* left */}
-            <div className="rounded-2xl border border-white/15 bg-black/30 p-4 md:p-5">
-              <label className="block text-sm text-white/70 mb-2">
+            <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:p-5">
+              <label className="block text-sm text-[#9AA4B2] mb-2">
                 Your TRT Holdings{" "}
-                <span className="text-emerald-400/80">
+                <span className="text-[#5EEAD4]">
                   ({(pctOfSupply * 100 || 0).toFixed(2)}%)
                 </span>
               </label>
-              <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
+              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -392,34 +413,25 @@ export default function RewardsCalculatorModal({
                   onChange={onHoldingsChange}
                   onKeyDown={onNumericKeyDown}
                   placeholder="1,000,000"
-                  className="w-full bg-transparent outline-none placeholder:text-white/30"
+                  className="w-full bg-transparent outline-none placeholder:text-white/30 text-[#E6EAF2]"
                 />
-                <span className="text-sm opacity-70">TRT</span>
+                <span className="text-sm text-[#9AA4B2]">TRT</span>
               </div>
 
               {/* quick buttons */}
               <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  onClick={() => setQuick(100_000)}
-                  className="rounded-full px-3 py-1.5 border border-white/15 bg-white/5 hover:bg-white/10 text-sm"
-                >
-                  100k
-                </button>
-                <button
-                  onClick={() => setQuick(1_000_000)}
-                  className="rounded-full px-3 py-1.5 border border-white/15 bg-white/5 hover:bg-white/10 text-sm"
-                >
-                  1M
-                </button>
-                <button
-                  onClick={() => setQuick(10_000_000)}
-                  className="rounded-full px-3 py-1.5 border border-white/15 bg-white/5 hover:bg-white/10 text-sm"
-                >
-                  10M
-                </button>
+                {[100_000, 1_000_000, 10_000_000].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setQuick(n)}
+                    className="rounded-full px-3 py-1.5 border border-white/10 bg-white/5 hover:bg-white/10 text-sm text-[#E6EAF2] transition"
+                  >
+                    {n >= 1_000_000 ? `${n / 1_000_000}M` : `${n / 1_000}k`}
+                  </button>
+                ))}
                 <button
                   onClick={setMax}
-                  className="rounded-full px-3 py-1.5 border border-white/15 bg-white/5 hover:bg-white/10 text-sm"
+                  className="rounded-full px-3 py-1.5 border border-white/10 bg-white/5 hover:bg-white/10 text-sm text-[#E6EAF2] transition"
                   title={`Set to Max (${fmtInt(Number(metrics.supply || 0))})`}
                 >
                   Max
@@ -429,10 +441,10 @@ export default function RewardsCalculatorModal({
               {/* Simulated Volume */}
               <div className="mt-6">
                 <div className="flex items-center justify-between">
-                  <label className="block text-sm text-white/70">Simulated Volume</label>
-                  <span className="text-xs text-red-300/80">leave empty to use actual volume</span>
+                  <label className="block text-sm text-[#9AA4B2]">Simulated Volume</label>
+                  <span className="text-xs text-red-400/80">leave empty to use actual volume</span>
                 </div>
-                <div className="mt-1 flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
+                <div className="mt-1 flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -440,9 +452,9 @@ export default function RewardsCalculatorModal({
                     onChange={onSimVolChange}
                     onKeyDown={onNumericKeyDown}
                     placeholder="1,000,000"
-                    className="w-full bg-transparent outline-none placeholder:text-white/30"
+                    className="w-full bg-transparent outline-none placeholder:text-white/30 text-[#E6EAF2]"
                   />
-                  <span className="text-sm opacity-70">USD</span>
+                  <span className="text-sm text-[#9AA4B2]">USD</span>
                 </div>
               </div>
 
@@ -461,19 +473,18 @@ export default function RewardsCalculatorModal({
                 />
               </div>
 
-              {/* optional error text */}
               {status === "error" && (
-                <div className="mt-3 text-sm text-red-300">
-                  Couldn’t load live metrics.
+                <div className="mt-3 text-sm text-red-400">
+                  Couldn't load live metrics.
                 </div>
               )}
             </div>
 
-            {/* right */}
+            {/* right - THEMED CARDS */}
             <div className="grid gap-4">
-              <NeonCard title="DAILY EARNINGS" value={fmtUSD.format(daily || 0)} />
-              <NeonCard title="MONTHLY EARNINGS" value={fmtUSD.format(monthly || 0)} />
-              <NeonCard title="YEARLY EARNINGS" value={fmtUSD.format(yearly || 0)} />
+              <StatCard title="DAILY EARNINGS" value={fmtUSD.format(daily || 0)} accent="amber" />
+              <StatCard title="MONTHLY EARNINGS" value={fmtUSD.format(monthly || 0)} accent="amber" />
+              <StatCard title="YEARLY EARNINGS" value={fmtUSD.format(yearly || 0)} accent="amber" />
             </div>
           </div>
         ) : (
@@ -481,20 +492,20 @@ export default function RewardsCalculatorModal({
           <>
             <div className="grid md:grid-cols-2 gap-6">
               {/* left: address + meta */}
-              <div className="rounded-2xl border border-white/15 bg-black/30 p-4 md:p-5">
-                <label className="block text-sm text-white/70 mb-2">Your wallet address</label>
-                <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/40 px-3 py-2">
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4 md:p-5">
+                <label className="block text-sm text-[#9AA4B2] mb-2">Your wallet address</label>
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2">
                   <input
                     type="text"
                     value={addr}
                     onChange={(e) => setAddr(e.target.value)}
                     placeholder="Enter your address"
-                    className="w-full bg-transparent outline-none placeholder:text-white/30"
+                    className="w-full bg-transparent outline-none placeholder:text-white/30 text-[#E6EAF2]"
                   />
                   <button
                     onClick={checkEarnings}
                     disabled={earnLoading || !addr.trim()}
-                    className="shrink-0 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm hover:bg-white/15 disabled:opacity-50"
+                    className="shrink-0 rounded-lg border border-[#F5B971]/30 bg-[#F5B971]/20 px-3 py-1.5 text-sm text-[#F5B971] font-semibold hover:bg-[#F5B971]/30 disabled:opacity-50 transition"
                   >
                     {earnLoading ? "Checking…" : "Check"}
                   </button>
@@ -517,41 +528,46 @@ export default function RewardsCalculatorModal({
                 </div>
 
                 {earnError && (
-                  <div className="mt-3 text-sm text-red-300">{earnError}</div>
+                  <div className="mt-3 text-sm text-red-400">{earnError}</div>
                 )}
               </div>
 
-              {/* right: totals summary (two cards side by side) */}
+              {/* right: totals summary - THEMED CARDS */}
               <div className="grid sm:grid-cols-2 gap-4">
-                <NeonCard
+                <StatCard
                   title="TOTAL SOL"
                   value={solTotal.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                  accent="amber"
                 />
-                <NeonCard
+                <StatCard
                   title="TOTAL USDC"
                   value={usdcTotal.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  accent="amber"
                 />
                 <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-black/30 p-4">
-                  <div className="text-xs uppercase tracking-wide text-white/70 mb-2">
+                  <div className="text-xs uppercase tracking-wide text-[#9AA4B2] mb-2">
                     Per-asset totals
                   </div>
                   <div className="space-y-1 text-sm">
                     {(earnings?.items || []).length === 0 ? (
-                      <div className="opacity-60">—</div>
+                      <div className="text-[#9AA4B2]">—</div>
                     ) : (
-                      (earnings?.items || []).map((i, idx) => (
-                        <div key={`${i.mint || i.symbol || idx}`} className="flex justify-between">
-                          <span className="opacity-80">
-                            {i.symbol ||
-                              (i.mint ? i.mint.slice(0, 4) + "…" + i.mint.slice(-4) : "—")}
-                          </span>
-                          <span className="font-medium">
-                            {Number(i.amount || 0).toLocaleString(undefined, {
-                              maximumFractionDigits: 9,
-                            })}
-                          </span>
-                        </div>
-                      ))
+                      (earnings?.items || []).map((i, idx) => {
+                        const displaySymbol = i.symbol ||
+                          (i.mint ? i.mint.slice(0, 4) + "…" + i.mint.slice(-4) : "—");
+                        return (
+                          <div key={`${i.mint || i.symbol || idx}`} className="flex justify-between">
+                            <span style={{ color: getAssetColor(idx) }}>
+                              {displaySymbol}
+                            </span>
+                            <span className="font-medium text-[#E6EAF2]">
+                              {Number(i.amount || 0).toLocaleString(undefined, {
+                                maximumFractionDigits: 9,
+                              })}
+                            </span>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -560,7 +576,7 @@ export default function RewardsCalculatorModal({
 
             {/* Recent events (fixed-height, scrollable) */}
             <div className="mt-6 rounded-2xl border border-white/10 bg-black/25 p-4">
-              <div className="text-xs uppercase tracking-wide text-white/70 mb-3">
+              <div className="text-xs uppercase tracking-wide text-[#9AA4B2] mb-3">
                 Recent events
               </div>
               <div
@@ -569,18 +585,18 @@ export default function RewardsCalculatorModal({
                 className="overflow-x-auto"
               >
                 <table className="w-full text-sm">
-                  <thead className="text-white/60 sticky top-0 bg-black/40 backdrop-blur">
+                  <thead className="sticky top-0 bg-black/40 backdrop-blur">
                     <tr className="text-left">
-                      <th className="py-2 pr-3 font-medium">Time</th>
-                      <th className="py-2 pr-3 font-medium">Asset</th>
-                      <th className="py-2 pr-3 font-medium">Amount</th>
-                      <th className="py-2 font-medium">Tx</th>
+                      <th className="py-2 pr-3 font-medium text-[#F97316]">Time</th>
+                      <th className="py-2 pr-3 font-medium text-[#F97316]">Asset</th>
+                      <th className="py-2 pr-3 font-medium text-[#F97316]">Amount</th>
+                      <th className="py-2 font-medium text-[#F97316]">Tx</th>
                     </tr>
                   </thead>
                   <tbody>
                     {events.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-3 text-white/60">
+                        <td colSpan={4} className="py-3 text-[#9AA4B2]">
                           —
                         </td>
                       </tr>
@@ -596,9 +612,9 @@ export default function RewardsCalculatorModal({
                               (ev.tokenMint ? ev.tokenMint.slice(0, 4) + "…" + ev.tokenMint.slice(-4) : "SPL");
                         return (
                           <tr key={`${ev.signature}-${ev.tokenMint || "SOL"}`} className="border-t border-white/5">
-                            <td className="py-2 pr-3">{when}</td>
-                            <td className="py-2 pr-3">{symbol}</td>
-                            <td className="py-2 pr-3">
+                            <td className="py-2 pr-3 text-[#E6EAF2]">{when}</td>
+                            <td className="py-2 pr-3" style={{ color: getAssetColor(symbol) }}>{symbol}</td>
+                            <td className="py-2 pr-3 text-[#E6EAF2]">
                               {Number(ev.amount || 0).toLocaleString(undefined, {
                                 maximumFractionDigits: 9,
                               })}
@@ -606,7 +622,7 @@ export default function RewardsCalculatorModal({
                             <td className="py-2">
                               {ev.signature ? (
                                 <a
-                                  className="text-cyan-300 hover:underline"
+                                  className="text-[#5EEAD4] hover:underline"
                                   href={`https://solscan.io/tx/${ev.signature}`}
                                   target="_blank"
                                   rel="noreferrer"
@@ -630,7 +646,7 @@ export default function RewardsCalculatorModal({
               {eventsTotal > events.length && (
                 <div className="mt-3">
                   <button
-                    className="rounded-xl px-3 py-1.5 border border-white/15 bg-white/10 hover:bg-white/15 text-sm disabled:opacity-50"
+                    className="rounded-xl px-3 py-1.5 border border-white/10 bg-white/10 hover:bg-white/15 text-sm text-[#E6EAF2] disabled:opacity-50 transition"
                     disabled={eventsLoading}
                     onClick={() => loadHistory(addr.trim(), eventsPage + 1)}
                   >
@@ -642,31 +658,26 @@ export default function RewardsCalculatorModal({
           </>
         )}
 
-        {/* footer actions — present ONLY for Calculator tab (unchanged) */}
+        {/* footer actions — Calculator tab only */}
         {view === "calc" && (
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               type="button"
               onClick={fetchLive}
-              /* refreshable button */
               disabled={status === "loading"}
-              className={`rounded-2xl px-5 py-3 border transition font-semibold
+              className={`rounded-2xl px-5 py-3 border transition font-semibold text-[#E6EAF2]
                 ${
                   useLive
-                    ? "border-emerald-400/40 bg-emerald-600/20 hover:bg-emerald-600/25"
-                    : "border-white/15 bg-white/10 hover:bg-white/15"
+                    ? "border-[#5EEAD4]/40 bg-[#5EEAD4]/20 hover:bg-[#5EEAD4]/25"
+                    : "border-white/10 bg-white/10 hover:bg-white/15"
                 }`}
             >
-              {status === "loading"
-                ? "Connecting…"
-                : useLive
-                ? "Refresh Live Data"
-                : "Refresh Live Data"}
+              {status === "loading" ? "Connecting…" : "Refresh Live Data"}
             </button>
 
             <button
               onClick={onClose}
-              className="rounded-2xl px-5 py-3 border border-white/20 bg-white/10 hover:bg-white/15 transition font-semibold"
+              className="rounded-2xl px-5 py-3 border border-white/20 bg-white/10 hover:bg-white/15 transition font-semibold text-[#E6EAF2]"
             >
               Close
             </button>
