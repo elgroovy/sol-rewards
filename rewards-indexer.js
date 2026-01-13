@@ -337,16 +337,29 @@ async function runOnce() {
   console.log(`[indexer] start ${new Date().toISOString()}`);
   const { lastSignature } = await getCursor();
 
+  if (lastSignature) {
+    console.log(`[indexer] resuming from cursor: ${lastSignature.slice(0, 16)}...`);
+  } else {
+    console.log(`[indexer] no cursor found, starting fresh`);
+  }
+
   let before = undefined;
   let done = false;
-  let latestProcessed = null;  // Track latest tx, regardless of rewards
-  let latestReward = null;     // Track latest tx with rewards (for logging)
+  let latestProcessed = null;
+  let latestReward = null;
   let txCount = 0;
   let rewardCount = 0;
+  let pageCount = 0;
 
   while (!done) {
     const sigs = await fetchSignatures(before, 1000);
-    if (sigs.length === 0) break;
+    if (sigs.length === 0) {
+      console.log(`[indexer] no more signatures to fetch`);
+      break;
+    }
+
+    pageCount++;
+    console.log(`[indexer] page ${pageCount}: fetched ${sigs.length} signatures`);
 
     // Process in batches to reduce round-trips
     for (let i = 0; i < sigs.length; i += 100) {
@@ -359,6 +372,11 @@ async function runOnce() {
         const sig = tx.signature;
         txCount++;
 
+        // Progress log every 500 transactions
+        if (txCount % 500 === 0) {
+          console.log(`[indexer] ... ${txCount} txs processed, ${rewardCount} rewards found`);
+        }
+
         // Always track the latest transaction processed
         if (!latestProcessed) {
           latestProcessed = { sig, slot: tx.slot };
@@ -366,6 +384,7 @@ async function runOnce() {
 
         // Stop when we reach the last processed transaction
         if (lastSignature && sig === lastSignature) {
+          console.log(`[indexer] reached cursor, stopping`);
           done = true;
           break;
         }
@@ -391,22 +410,24 @@ async function runOnce() {
     await sleep(50); // address rate limiting
   }
 
+  // Summary
+  console.log(`[indexer] ----------------------------------------`);
+  console.log(`[indexer] processed ${txCount} transactions`);
+  console.log(`[indexer] found ${rewardCount} reward events`);
+
   // Always save cursor (even if no rewards found)
   if (latestProcessed) {
     await saveCursor(latestProcessed.sig, latestProcessed.slot);
-    console.log(`[indexer] cursor -> ${latestProcessed.sig}`);
-    console.log(`[indexer] processed ${txCount} transactions, found ${rewardCount} rewards`);
-    
-    if (latestReward) {
-      console.log(`[indexer] last reward tx: ${latestReward.sig}`);
-    } else {
-      console.log(`[indexer] no rewards found in this batch`);
-    }
+    console.log(`[indexer] cursor saved: ${latestProcessed.sig.slice(0, 16)}...`);
   } else {
     console.log(`[indexer] no new transactions to process`);
   }
   
-  console.log(`[indexer] end   ${new Date().toISOString()}`);
+  if (latestReward) {
+    console.log(`[indexer] latest reward tx: ${latestReward.sig.slice(0, 16)}...`);
+  }
+  
+  console.log(`[indexer] end ${new Date().toISOString()}`);
 }
 
 // --- Loop (scheduled) -------------------------------------------
