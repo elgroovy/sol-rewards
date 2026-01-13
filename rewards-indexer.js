@@ -242,13 +242,33 @@ export function extractRewards(tx) {
 
   // --- SPL token transfers ---
   if (Array.isArray(tx.tokenTransfers)) {
+    // Build a map of mint -> {rawAmount, decimals} from accountData
+    const mintInfo = new Map();
+    if (Array.isArray(tx.accountData)) {
+      for (const ad of tx.accountData) {
+        if (Array.isArray(ad.tokenBalanceChanges)) {
+          for (const tbc of ad.tokenBalanceChanges) {
+            if (tbc.mint && tbc.rawTokenAmount) {
+              mintInfo.set(tbc.mint, {
+                decimals: Number(tbc.rawTokenAmount.decimals) || 0,
+              });
+            }
+          }
+        }
+      }
+    }
+
     for (const tt of tx.tokenTransfers) {
       if (tt.fromUserAccount !== Constants.kFeeRecipientWalletPubkey) continue;
       if (!tt.toUserAccount || !(tt.tokenAmount > 0)) continue;
-
-      // Skip off-curve destinations (e.g. temp accounts / PDAs).
-      // This will skip Jupiter Aggregator swap transactions and similar things
       if (!isOnCurveAddress(tt.toUserAccount)) continue;
+
+      // Get decimals from accountData, fallback to 6 (common for SPL tokens)
+      const info = mintInfo.get(tt.mint) || {};
+      const decimals = info.decimals ?? 6;
+      
+      // Convert UI amount back to raw
+      const rawAmount = String(Math.round(tt.tokenAmount * Math.pow(10, decimals)));
 
       out.push({
         signature,
@@ -257,8 +277,8 @@ export function extractRewards(tx) {
         wallet: tt.toUserAccount,
         assetType: "SPL",
         tokenMint: tt.mint,
-        amountRaw: String(tt.rawTokenAmount),
-        decimals: Number.isFinite(tt.decimals) ? tt.decimals : 0,
+        amountRaw: rawAmount,
+        decimals: decimals,
       });
     }
   }
