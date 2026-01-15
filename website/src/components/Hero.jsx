@@ -307,7 +307,7 @@ export default function Hero() {
         <img 
           src="/jackpot-character.gif" 
           alt="Jackpot" 
-          className="w-28 md:w-48 lg:w-56 h-auto drop-shadow-[0_0_25px_rgba(255,215,0,0.2)]"
+          className="w-28 md:w-48 lg:w-56 h-auto"
         />
       </div>
     </section>
