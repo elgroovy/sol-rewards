@@ -34,8 +34,8 @@ app.use("/earnings", earningsRoutes);
 // Start server
 if (useHttps) {
   const options = {
-    key:  fs.readFileSync("./pkey.pem"),
-    cert: fs.readFileSync("./fullchain.pem"), // leaf + intermediates
+    key:  fs.readFileSync("/etc/letsencrypt/live/api.testrewardstoken.com/privkey.pem"),
+    cert: fs.readFileSync("/etc/letsencrypt/live/api.testrewardstoken.com/fullchain.pem"), // leaf + intermediates
     // If your key is passphrase-protected:
     // passphrase: "your-passphrase"
   };
