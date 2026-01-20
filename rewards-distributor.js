@@ -11,7 +11,6 @@ import {
 import {
     getOrCreateAssociatedTokenAccount,
     getAssociatedTokenAddressSync,
-    getMint,
     unpackAccount,
     burnChecked,
     createTransferCheckedInstruction,
@@ -141,10 +140,6 @@ async function distributeToHolders(connection, totalLamportsToSend) {
         }
     }
 
-    // Fetch the total supply from the mint account
-    const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), {commitment: "confirmed"}, TOKEN_2022_PROGRAM_ID);
-    const totalSupply = mintAccount.supply;
-
     // Get all owner pubkeys for balance checking (only needed for SOL distribution)
     let balanceMap = new Map();
     if (Constants.kRewardTokenMintPubkey.length === 0) {
@@ -173,7 +168,10 @@ async function distributeToHolders(connection, totalLamportsToSend) {
     const walletsData = [];
     const pendingRewards = [];
 
-    // Prepare transfer instructions for each holder
+    // First pass: filter eligible holders and calculate sqrt weights
+    const eligibleHolders = [];
+    let totalSqrtWeight = 0;
+
     for (const accountInfo of allAccounts) {
         const account = unpackAccount(
             accountInfo.pubkey,
@@ -183,12 +181,12 @@ async function distributeToHolders(connection, totalLamportsToSend) {
 
         const ownerAddress = account.owner.toBase58();
 
-         // Skip manual exclusions
+        // Skip manual exclusions
         if (MANUAL_EXCLUSIONS.has(ownerAddress)) {
             skippedManual++;
             continue;
         }
-        
+
         // Skip PDAs (off-curve addresses, like pool vaults, program accounts etc.)
         if (!PublicKey.isOnCurve(account.owner.toBytes())) {
             console.log(`Skipping ${ownerAddress} - off-curve (likely a pool/PDA)`);
@@ -203,6 +201,23 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             continue;
         }
 
+        // Calculate square root weight for fairer distribution
+        const sqrtWeight = Math.sqrt(Number(account.amount));
+        totalSqrtWeight += sqrtWeight;
+
+        eligibleHolders.push({
+            account,
+            ownerAddress,
+            sqrtWeight
+        });
+    }
+
+    console.log(`Eligible holders for sqrt distribution: ${eligibleHolders.length}, total sqrt weight: ${totalSqrtWeight.toFixed(2)}`);
+
+    // Second pass: calculate shares and create transfer instructions
+    for (const holder of eligibleHolders) {
+        const { account, ownerAddress, sqrtWeight } = holder;
+
         if (Constants.kRewardTokenMintPubkey.length > 0) {
             // Get the associated token account for the holder
             const holderTokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -216,7 +231,9 @@ async function distributeToHolders(connection, totalLamportsToSend) {
                 rewardTokenBalance.programId
             );
 
-            const holderTokenShare = (BigInt(account.amount) * BigInt(rewardTokenBalance.balance)) / BigInt(totalSupply);
+            // Square root weighted share for token distribution
+            const shareRatio = sqrtWeight / totalSqrtWeight;
+            const holderTokenShare = BigInt(Math.floor(shareRatio * Number(rewardTokenBalance.balance)));
 
             // Transfer reward tokens
             instructions.push(
@@ -231,20 +248,22 @@ async function distributeToHolders(connection, totalLamportsToSend) {
                     rewardTokenBalance.programId
                 ),
             );
-            
+
             walletsData.push({
-                walletAddress: account.owner.toBase58(),
+                walletAddress: ownerAddress,
                 amountEarned: Number(holderTokenShare) / 10 ** rewardTokenBalance.decimals,
                 tokenSymbol: Constants.kRewardTokenSymbol
             });
         } else {
-            const holderShare = (BigInt(account.amount) * BigInt(totalLamportsToSend)) / BigInt(totalSupply);
+            // Square root weighted share for SOL distribution
+            const shareRatio = sqrtWeight / totalSqrtWeight;
+            const holderShare = BigInt(Math.floor(shareRatio * totalLamportsToSend));
 
             // If SOL amount is too small, add to pending rewards instead of skipping
             if (holderShare < BigInt(Constants.kSolMinLimit * LAMPORTS_PER_SOL)) {
                 if (holderShare > 0n) {
                     pendingRewards.push({
-                        wallet: account.owner.toBase58(),
+                        wallet: ownerAddress,
                         amount: Number(holderShare)
                     });
                     skippedMinShare++;
@@ -253,9 +272,9 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             }
 
             // Check if recipient has enough SOL to be rent-exempt
-            const recipientBalance = balanceMap.get(account.owner.toBase58()) || 0;
+            const recipientBalance = balanceMap.get(ownerAddress) || 0;
             if (recipientBalance === 0) {
-                console.log(`Skipping ${account.owner.toBase58()} - no SOL balance`);
+                console.log(`Skipping ${ownerAddress} - no SOL balance`);
                 continue;
             }
 
@@ -269,7 +288,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             );
 
             walletsData.push({
-                walletAddress: account.owner.toBase58(),
+                walletAddress: ownerAddress,
                 amountEarned: Number(holderShare) / LAMPORTS_PER_SOL,
                 tokenSymbol: "SOL"
             });
