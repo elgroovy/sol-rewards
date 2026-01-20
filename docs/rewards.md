@@ -44,30 +44,36 @@ The converted SOL is divided into three portions:
 
 | Destination          | Share | Purpose                                      |
 | -------------------- | ----- | -------------------------------------------- |
+| **Holders**          | 50%   | Direct rewards to eligible token holders     |
 | **Jackpot Fund**     | 30%   | Funds the lottery-style jackpot draws        |
 | **Treasury/Buyback** | 20%   | Funds project development and token buybacks |
-| **Holders**          | 50%   | Direct rewards to eligible token holders     |
 
 #### Step 4: Calculating Your Share
 
-Your individual reward is calculated based on **how much of the total supply you hold**.
+Your individual reward is calculated using **square root weighting**. This compresses the gap between large and small holders — whales still earn more, but smaller holders get a fairer slice of the pie.
 
-**Simple formula:**
+**Example:** Two holders splitting a 1 SOL reward pool (total supply: 1 billion)
 
-> Your Reward = (Your Tokens ÷ Total Supply) × Holders' Reward Pool
+| Holder | Tokens | % of Supply | With Linear | With Sqrt |
+| ------ | ------ | ----------- | ----------- | --------- |
+| Whale | 50,000,000 | 5% | 0.91 SOL | 0.76 SOL |
+| Small holder | 5,000,000 | 0.5% | 0.09 SOL | 0.24 SOL |
 
-**Example:**
+The whale has 10x more tokens but only gets ~3x more rewards (instead of 10x). The difference is redistributed to the smaller holder.
 
-* Total reward pool for holders: 0.5 SOL
-* Total token supply: 1,000,000,000 tokens
-* You hold: 5,000,000 tokens (0.5% of supply)
-* Your reward: 0.5% × 0.5 SOL = **0.0025 SOL**
-
-The more tokens you hold, the larger your share of the rewards.
+Your share is based on total supply, so it stays consistent as long as your holdings don't change — new holders joining won't reduce your rewards.
 
 #### Step 5: Batch Distribution
 
 Because Solana has transaction size limits, rewards are sent out in batches of 10 wallets at a time. This ensures all transactions complete successfully.
+
+***
+
+### Pending Rewards for Small Holders
+
+If your calculated reward for a distribution cycle is very small (below 0.00005 SOL), it won't be sent immediately — but it's **not lost**. Instead, your reward is saved and accumulates over multiple cycles.
+
+Once your accumulated rewards reach the minimum threshold, they are automatically sent to your wallet. This ensures that even smaller holders eventually receive their fair share without being skipped entirely.
 
 ***
 
@@ -112,10 +118,11 @@ After each distribution cycle, a notification is sent to the Telegram bot showin
 | Holders' share                        | 50%                                  |
 | Jackpot share                         | 30%                                  |
 | Treasury share                        | 20%                                  |
+| Distribution model                    | Square root weighted                 |
 | Distribution frequency                | Every 5 minutes (when threshold met) |
 
 ***
 
-**In short:** Hold at least 100,000 tokens, keep some SOL in your wallet, and rewards will automatically flow to you based on your share of the total supply — no staking or claiming required.
+**In short:** Hold at least 100,000 tokens, keep some SOL in your wallet, and rewards will automatically flow to you based on square root weighting — giving smaller holders a fairer share. No staking or claiming required.
 
 <figure><img src=".gitbook/assets/trt-notif-bot-transparent.png" alt="" width="375"><figcaption></figcaption></figure>

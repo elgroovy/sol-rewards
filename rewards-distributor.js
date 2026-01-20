@@ -13,6 +13,7 @@ import {
     unpackAccount,
     burnChecked,
     createTransferCheckedInstruction,
+    getMint,
     TOKEN_2022_PROGRAM_ID
 } from "@solana/spl-token";
 
@@ -169,7 +170,6 @@ async function distributeToHolders(connection, totalLamportsToSend) {
 
     // First pass: filter eligible holders and calculate sqrt weights
     const eligibleHolders = [];
-    let totalSqrtWeight = 0;
 
     for (const accountInfo of allAccounts) {
         const account = unpackAccount(
@@ -202,7 +202,6 @@ async function distributeToHolders(connection, totalLamportsToSend) {
 
         // Calculate square root weight for fairer distribution
         const sqrtWeight = Math.sqrt(Number(account.amount));
-        totalSqrtWeight += sqrtWeight;
 
         eligibleHolders.push({
             account,
@@ -211,7 +210,13 @@ async function distributeToHolders(connection, totalLamportsToSend) {
         });
     }
 
-    console.log(`Eligible holders for sqrt distribution: ${eligibleHolders.length}, total sqrt weight: ${totalSqrtWeight.toFixed(2)}`);
+    console.log(`Eligible holders for sqrt distribution: ${eligibleHolders.length}`);
+
+    // Fetch the total supply from the mint account for sqrt-based distribution
+    const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), "confirmed", TOKEN_2022_PROGRAM_ID);
+    const totalSupply = Number(mintAccount.supply);
+    const sqrtTotalSupply = Math.sqrt(totalSupply);
+    console.log(`Total supply: ${totalSupply / Math.pow(10, Constants.kTokenDecimals)}, sqrt: ${sqrtTotalSupply.toFixed(2)}`);
 
     // Second pass: calculate shares and create transfer instructions
     for (const holder of eligibleHolders) {
@@ -231,7 +236,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             );
 
             // Square root weighted share for token distribution
-            const shareRatio = sqrtWeight / totalSqrtWeight;
+            const shareRatio = sqrtWeight / sqrtTotalSupply;
             const holderTokenShare = BigInt(Math.floor(shareRatio * Number(rewardTokenBalance.balance)));
 
             // Transfer reward tokens
@@ -255,7 +260,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             });
         } else {
             // Square root weighted share for SOL distribution
-            const shareRatio = sqrtWeight / totalSqrtWeight;
+            const shareRatio = sqrtWeight / sqrtTotalSupply;
             const holderShare = BigInt(Math.floor(shareRatio * totalLamportsToSend));
 
             // If SOL amount is too small, add to pending rewards instead of skipping
