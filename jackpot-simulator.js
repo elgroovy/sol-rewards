@@ -642,8 +642,6 @@ async function handleJackpots() {
         // Always reserve some SOL for fees
         currBalance = Math.max(0, currBalance - 0.01);
 
-        await sendSimpleMessage("Verifying account balance...", 5000);
-
         // In simulation mode, use a fake balance if real balance is too low
         const balanceToUse = SIMULATION_MODE ? Constants.kJackpotThreshold + 0.1 : currBalance;
 
@@ -676,8 +674,8 @@ async function handleJackpots() {
             } else {
                 nextCheckDelayText = `${mins} ${mins === 1 ? 'min' : 'mins'}`;
             }
-            
-            await sendSimpleMessage(`Insufficient balance for jackpot draw.\nBalance: ${balanceToUse.toFixed(3)} / ${Constants.kJackpotThreshold} SOL.\nNext check in ${nextCheckDelayText}.`);
+
+            await sendSimpleMessage(`Jackpot Status: Accumulating...\nBalance: ${balanceToUse.toFixed(3)} / ${Constants.kJackpotThreshold} SOL\nNext draw attempt in ${nextCheckDelayText}.`);
         }
     } catch (error) {
         console.error("Error handling jackpots:", error);

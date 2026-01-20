@@ -39,7 +39,7 @@ export const Constants = {
     kBuybackTokenAccount: "9RQPZTRMcaskfFUgvW71aFBsxxX1zovAMJSZbev9jYFZ",
 
     // Jackpot settings
-    kJackpotThreshold : 0.2,                    // 0.2 SOL
+    kJackpotThreshold : 0.1,                    // 0.1 SOL
     kJackpotTokensToAccumulate: 100,            // 100 tokens
     kJackpotEligibilityMinHolding : 100_000,    // 100,000 tokens
     kJackpotCheckInterval : 30,                 // 30 minutes
