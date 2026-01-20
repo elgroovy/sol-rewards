@@ -24,6 +24,17 @@ export function getConnection() {
 CREATE DATABASE IF NOT EXISTS solrewards CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE solrewards;
 
+CREATE TABLE pending_rewards (
+  wallet VARCHAR(64) NOT NULL,
+  amount_lamports BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  accumulated_count INT UNSIGNED DEFAULT 1,
+  first_accumulated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_accumulated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (wallet),
+  KEY idx_amount (amount_lamports),
+  KEY idx_accumulated_at (last_accumulated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Reward eligibility for holders
 CREATE TABLE eligible_holders (
     wallet_address VARCHAR(255) UNIQUE

@@ -408,3 +408,50 @@ export async function getIndexerStatus(_req, res) {
     return res.status(500).json({ error: "Internal error" });
   }
 }
+
+/**
+ * GET /earnings/pending?address=...
+ * Returns: { address, pending, amount, amountSol, accumulatedCount, firstAccumulatedAt, lastAccumulatedAt }
+ * - Returns pending rewards that are accumulated but not yet distributed (below dust threshold).
+ */
+export async function getPendingRewards(req, res) {
+  try {
+    const address = String(req.query.address || "").trim();
+    if (!isNonEmptyString(address)) {
+      return res.status(400).json({ error: "Missing ?address" });
+    }
+
+    const [rows] = await db.query(
+      `SELECT amount_lamports, accumulated_count, first_accumulated_at, last_accumulated_at
+       FROM pending_rewards
+       WHERE wallet = ?`,
+      [address]
+    );
+
+    if (rows.length === 0) {
+      return res.json({
+        address,
+        pending: false,
+        amount: 0,
+        amountSol: 0,
+        accumulatedCount: 0,
+        firstAccumulatedAt: null,
+        lastAccumulatedAt: null,
+      });
+    }
+
+    const row = rows[0];
+    return res.json({
+      address,
+      pending: true,
+      amount: Number(row.amount_lamports),
+      amountSol: Number(row.amount_lamports) / 1e9,
+      accumulatedCount: Number(row.accumulated_count),
+      firstAccumulatedAt: asISO(row.first_accumulated_at),
+      lastAccumulatedAt: asISO(row.last_accumulated_at),
+    });
+  } catch (err) {
+    console.error("getPendingRewards error:", err);
+    return res.status(500).json({ error: "Internal error" });
+  }
+}

@@ -4,6 +4,7 @@ import {
   getEarningsHistory,
   getLeaderboard,
   getIndexerStatus,
+  getPendingRewards,
 } from "../controllers/earningsController.js";
 
 const router = express.Router();
@@ -19,5 +20,8 @@ router.get("/leaderboard", getLeaderboard);
 
 // Indexer/status (last cursor + watermark)
 router.get("/status", getIndexerStatus);
+
+// Pending rewards for a wallet (accumulated but not yet distributed)
+router.get("/pending", getPendingRewards);
 
 export default router;

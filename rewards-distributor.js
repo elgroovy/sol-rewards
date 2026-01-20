@@ -24,6 +24,7 @@ import { Constants } from './constants.js';
 import { Config } from './config.js';
 import { collectFees } from './fee-collector.js';
 import fetch from 'node-fetch';
+import * as db from './db.js';
 
 
 let ownerKeypair = null;
@@ -60,17 +61,50 @@ async function getRewardTokenBalance(connection) {
 async function getBalances(connection, pubkeys) {
     const BATCH_SIZE = 100;
     const balanceMap = new Map();
-    
+
     for (let i = 0; i < pubkeys.length; i += BATCH_SIZE) {
         const batch = pubkeys.slice(i, i + BATCH_SIZE);
         const accountInfos = await connection.getMultipleAccountsInfo(batch);
-        
+
         batch.forEach((pubkey, idx) => {
             balanceMap.set(pubkey.toBase58(), accountInfos[idx]?.lamports || 0);
         });
     }
-    
+
     return balanceMap;
+}
+
+async function savePendingRewards(pendingRewards) {
+    if (pendingRewards.length === 0) return;
+
+    const sql = `
+        INSERT INTO pending_rewards (wallet, amount_lamports, accumulated_count, first_accumulated_at, last_accumulated_at)
+        VALUES ?
+        ON DUPLICATE KEY UPDATE
+            amount_lamports = amount_lamports + VALUES(amount_lamports),
+            accumulated_count = accumulated_count + 1,
+            last_accumulated_at = CURRENT_TIMESTAMP
+    `;
+
+    const values = pendingRewards.map(p => [p.wallet, p.amount, 1, new Date(), new Date()]);
+    await db.query(sql, [values]);
+    console.log(`Saved ${pendingRewards.length} pending reward entries to database`);
+}
+
+async function getDistributablePendingRewards(minLamports) {
+    const [rows] = await db.query(
+        'SELECT wallet, amount_lamports FROM pending_rewards WHERE amount_lamports >= ?',
+        [minLamports]
+    );
+    return rows;
+}
+
+async function clearDistributedPendingRewards(wallets) {
+    if (wallets.length === 0) return;
+    await db.query(
+        'DELETE FROM pending_rewards WHERE wallet IN (?)',
+        [wallets]
+    );
 }
 
 async function distributeToHolders(connection, totalLamportsToSend) {
@@ -133,9 +167,11 @@ async function distributeToHolders(connection, totalLamportsToSend) {
     let skippedPDA = 0;
     let skippedManual = 0;
     let skippedBalance = 0;
+    let skippedMinShare = 0;
 
     const instructions = [];
     const walletsData = [];
+    const pendingRewards = [];
 
     // Prepare transfer instructions for each holder
     for (const accountInfo of allAccounts) {
@@ -204,9 +240,15 @@ async function distributeToHolders(connection, totalLamportsToSend) {
         } else {
             const holderShare = (BigInt(account.amount) * BigInt(totalLamportsToSend)) / BigInt(totalSupply);
 
-            // If SOL amount is too small, skip.
-            // We keep accumulating until we have enough to distribute.
+            // If SOL amount is too small, add to pending rewards instead of skipping
             if (holderShare < BigInt(Constants.kSolMinLimit * LAMPORTS_PER_SOL)) {
+                if (holderShare > 0n) {
+                    pendingRewards.push({
+                        wallet: account.owner.toBase58(),
+                        amount: Number(holderShare)
+                    });
+                    skippedMinShare++;
+                }
                 continue;
             }
 
@@ -234,7 +276,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
         }
     }
 
-    console.log(`Filtered: ${skippedPDA} PDAs, ${skippedManual} manual exclusions, ${skippedBalance} below threshold balance`);
+    console.log(`Filtered: ${skippedPDA} PDAs, ${skippedManual} manual exclusions, ${skippedBalance} below threshold balance, ${skippedMinShare} added to pending`);
     console.log(`Eligible holders: ${instructions.length}`);
 
     let transactionUrl = "";
@@ -263,6 +305,68 @@ async function distributeToHolders(connection, totalLamportsToSend) {
     }
 
     console.log(`Submitted ${instructions.length} transfer TXs).`);
+
+    // Save pending rewards to database
+    await savePendingRewards(pendingRewards);
+
+    // Distribute accumulated pending rewards that now exceed threshold
+    await distributeAcumulatedPendingRewards(connection);
+}
+
+async function distributeAcumulatedPendingRewards(connection) {
+    const distributablePending = await getDistributablePendingRewards(Constants.kSolMinLimit * LAMPORTS_PER_SOL);
+    if (distributablePending.length > 0) {
+        console.log(`Found ${distributablePending.length} wallets with distributable pending rewards`);
+
+        const pendingInstructions = [];
+        const pendingWalletsData = [];
+        const distributedWallets = [];
+
+        for (const pending of distributablePending) {
+            const recipientPubkey = new PublicKey(pending.wallet);
+
+            // Check SOL balance
+            const recipientBalance = await connection.getBalance(recipientPubkey);
+            if (recipientBalance === 0) {
+                console.log(`Skipping pending for ${pending.wallet} - no SOL balance`);
+                continue;
+            }
+
+            pendingInstructions.push(
+                SystemProgram.transfer({
+                    fromPubkey: ownerKeypair.publicKey,
+                    toPubkey: recipientPubkey,
+                    lamports: BigInt(pending.amount_lamports)
+                })
+            );
+
+            pendingWalletsData.push({
+                walletAddress: pending.wallet,
+                amountEarned: Number(pending.amount_lamports) / LAMPORTS_PER_SOL,
+                tokenSymbol: "SOL"
+            });
+
+            distributedWallets.push(pending.wallet);
+        }
+
+        // Send pending rewards in batches
+        for (let i = 0; i < pendingInstructions.length; i += Constants.kBatchSize) {
+            const transaction = new Transaction().add(...pendingInstructions.slice(i, i + Constants.kBatchSize));
+            const signature = await sendAndConfirmTransaction(connection, transaction, [ownerKeypair]);
+            const txUrl = `https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`;
+            console.log(`Pending rewards batch sent: ${txUrl}`);
+
+            await notifyTelegramBot({
+                messageType: "rewards",
+                wallets: pendingWalletsData.slice(i, i + Constants.kBatchSize),
+                transactionUrl: txUrl
+            });
+        }
+
+        // Clear distributed pending rewards from database
+        await clearDistributedPendingRewards(distributedWallets);
+        console.log(`Cleared ${distributedWallets.length} distributed pending rewards from database`);
+    }
 }
 
 async function notifyTelegramBot(notificationPayload)
