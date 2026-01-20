@@ -105,7 +105,7 @@ After each distribution cycle, a notification is sent to the Telegram bot showin
 * How much each wallet earned
 * A link to verify the transaction on Solscan
 
-<div align="left"><figure><img src=".gitbook/assets/image.png" alt="" width="187"><figcaption><p>Reward Rotifications Telegram Bot</p></figcaption></figure></div>
+<div align="left"><figure><img src=".gitbook/assets/rewards_notification.png" alt="" width="300"><figcaption><p>Rewards Rotification</p></figcaption></figure></div>
 
 ***
 

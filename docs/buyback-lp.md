@@ -1,6 +1,6 @@
 # Auto Buyback & LP
 
-<figure><img src=".gitbook/assets/buyback-lp.png" alt="" width="375"><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/buyback_notification_anim.gif" alt="" width="375"><figcaption></figcaption></figure>
 
 ## How Auto Buyback & LP Works
 
@@ -58,6 +58,8 @@ After each buyback cycle, a notification is sent to Telegram showing:
 * How many tokens were purchased
 * How much liquidity was added
 * A link to verify the transaction on Solscan
+
+<div align="left"><figure><img src=".gitbook/assets/buyback_notification.png" alt="" width="300"><figcaption><p>Buyback Rotification</p></figcaption></figure></div>
 
 ***
 
