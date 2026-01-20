@@ -1,7 +1,6 @@
 import {
     Connection,
     PublicKey,
-    clusterApiUrl,
     Transaction,
     SystemProgram,
     sendAndConfirmTransaction,
@@ -323,13 +322,20 @@ async function distributeToHolders(connection, totalLamportsToSend) {
         });
     }
 
-    console.log(`Submitted ${instructions.length} transfer TXs).`);
+    if (instructions.length > 0) {
+        console.log(`Submitted ${instructions.length} transfer TXs.`);
+    }
 
-    // Save pending rewards to database
+    // Save pending rewards to database (they accumulate over multiple cycles)
     await savePendingRewards(pendingRewards);
 
-    // Distribute accumulated pending rewards that now exceed threshold
-    await distributeAcumulatedPendingRewards(connection);
+    // Only check for distributable pending rewards if we had immediate distributions this cycle.
+    // If all holders went to pending, their amounts are definitely still below threshold.
+    if (instructions.length > 0) {
+        await distributeAcumulatedPendingRewards(connection);
+    } else {
+        console.log("No immediate distributions this cycle - amounts still accumulating");
+    }
 }
 
 async function distributeAcumulatedPendingRewards(connection) {
