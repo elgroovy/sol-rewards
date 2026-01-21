@@ -1,3 +1,25 @@
+---
+cover: .gitbook/assets/trt-cover.jpeg
+coverY: 0
+layout:
+  width: default
+  cover:
+    visible: true
+    size: hero
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+  metadata:
+    visible: true
+---
+
 # Auto Buyback & LP
 
 <figure><img src=".gitbook/assets/buyback_notification_anim.gif" alt="" width="375"><figcaption></figcaption></figure>
@@ -17,6 +39,7 @@ The buyback wallet accumulates SOL from 2% of all trading volume.
 **Step 2: Split 50/50**
 
 When the system runs, it splits the available SOL into two equal parts:
+
 * **50%** → Used to buy tokens from the market
 * **50%** → Reserved for pairing with the bought tokens
 
@@ -27,6 +50,7 @@ The first half of SOL is used to purchase tokens on a decentralized exchange. Th
 **Step 4: Add liquidity**
 
 The purchased tokens are paired with the remaining SOL and added to the liquidity pool on Meteora. This:
+
 * Deepens the liquidity pool
 * Reduces price impact on trades
 * Locks value into the ecosystem
@@ -35,11 +59,11 @@ The purchased tokens are paired with the remaining SOL and added to the liquidit
 
 ### Why This Matters
 
-| Benefit | How It Helps |
-| ------- | ------------ |
-| **Buy pressure** | Constant buying from the market supports price |
-| **Deeper liquidity** | Larger trades have less price impact |
-| **Permanent LP** | Liquidity is added, not removed — it compounds over time |
+| Benefit              | How It Helps                                             |
+| -------------------- | -------------------------------------------------------- |
+| **Buy pressure**     | Constant buying from the market supports price           |
+| **Deeper liquidity** | Larger trades have less price impact                     |
+| **Permanent LP**     | Liquidity is added, not removed — it compounds over time |
 
 ***
 
@@ -54,6 +78,7 @@ The purchased tokens are paired with the remaining SOL and added to the liquidit
 ### Notifications
 
 After each buyback cycle, a notification is sent to Telegram showing:
+
 * How much SOL was used for the buyback
 * How many tokens were purchased
 * How much liquidity was added
@@ -65,12 +90,12 @@ After each buyback cycle, a notification is sent to Telegram showing:
 
 ### Summary
 
-| Setting | Value |
-| ------- | ----- |
-| Funding source | 2% of trading volume |
-| Buyback/LP split | 50% / 50% |
-| Check frequency | Every 30 minutes |
-| Liquidity pool | Meteora DAMM v2 |
+| Setting          | Value                |
+| ---------------- | -------------------- |
+| Funding source   | 2% of trading volume |
+| Buyback/LP split | 50% / 50%            |
+| Check frequency  | Every 30 minutes     |
+| Liquidity pool   | Meteora DAMM v2      |
 
 ***
 

@@ -1,3 +1,25 @@
+---
+cover: .gitbook/assets/trt-cover.jpeg
+coverY: 0
+layout:
+  width: default
+  cover:
+    visible: true
+    size: hero
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+  metadata:
+    visible: true
+---
+
 # Lottery
 
 <figure><img src=".gitbook/assets/jackpot_char.png" alt="" width="375"><figcaption></figcaption></figure>
@@ -45,6 +67,7 @@ To be eligible, you must hold at least **100,000 tokens** in your wallet.
 The remaining 30% rolls over to the next draw — this keeps the jackpot fund growing as long as there's trading volume.
 
 **Example:** Jackpot has 1 SOL
+
 * If an old holder wins → they get **0.2 SOL**
 * If a new holder wins → they get **0.5 SOL**
 
@@ -66,13 +89,13 @@ Winner selection uses cryptographic randomness (the same secure randomness used 
 
 ### Summary
 
-| Setting                  | Value          |
-| ------------------------ | -------------- |
-| Minimum holding          | 100,000 tokens |
-| Jackpot trigger          | 0.1 SOL        |
-| Old holder prize         | 20%            |
-| New holder prize         | 50%            |
-| Rolls over to next draw  | 30%            |
+| Setting                 | Value          |
+| ----------------------- | -------------- |
+| Minimum holding         | 100,000 tokens |
+| Jackpot trigger         | 0.1 SOL        |
+| Old holder prize        | 20%            |
+| New holder prize        | 50%            |
+| Rolls over to next draw | 30%            |
 
 ***
 

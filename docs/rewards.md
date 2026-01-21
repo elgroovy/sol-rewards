@@ -1,3 +1,25 @@
+---
+cover: .gitbook/assets/trt-cover.jpeg
+coverY: 0
+layout:
+  width: default
+  cover:
+    visible: true
+    size: hero
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+  metadata:
+    visible: true
+---
+
 # Rewards
 
 <figure><img src=".gitbook/assets/dancing-dollar-bill.png" alt="" width="375"><figcaption></figcaption></figure>
@@ -54,12 +76,12 @@ Your individual reward is calculated using **square root weighting**. This compr
 
 **Example:** Two holders splitting a 1 SOL reward pool (total supply: 1 billion)
 
-| Holder | Tokens | % of Supply | With Linear | With Sqrt |
-| ------ | ------ | ----------- | ----------- | --------- |
-| Whale | 50,000,000 | 5% | 0.91 SOL | 0.76 SOL |
-| Small holder | 5,000,000 | 0.5% | 0.09 SOL | 0.24 SOL |
+| Holder       | Tokens     | % of Supply | With Linear | With Sqrt |
+| ------------ | ---------- | ----------- | ----------- | --------- |
+| Whale        | 50,000,000 | 5%          | 0.91 SOL    | 0.76 SOL  |
+| Small holder | 5,000,000  | 0.5%        | 0.09 SOL    | 0.24 SOL  |
 
-The whale has 10x more tokens but only gets ~3x more rewards (instead of 10x). The difference is redistributed to the smaller holder.
+The whale has 10x more tokens but only gets \~3x more rewards (instead of 10x). The difference is redistributed to the smaller holder.
 
 Your share is based on total supply, so it stays consistent as long as your holdings don't change — new holders joining won't reduce your rewards.
 
