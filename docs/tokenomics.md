@@ -63,7 +63,7 @@ At launch, the token supply was allocated as follows:
 
 #### Presale Details
 
-The public presale raised **2.857 SOL** from 35 participants. Tokens were distributed proportionally based on each participant's contribution — the more SOL contributed, the larger their share of the 50% presale allocation.
+Tokens were distributed proportionally based on each participant's SOL contribution — the more SOL contributed, the larger their share of the presale allocation.
 
 ***
 
@@ -73,53 +73,7 @@ Every buy, sell, and transfer incurs a **10% tax**. This tax is automatically co
 
 #### Tax Distribution
 
-The collected tax is converted to SOL and split as follows:
-
-| Destination        | Share | Purpose                                          |
-| ------------------ | ----- | ------------------------------------------------ |
-| **Holder Rewards** | 5%    | Distributed directly to eligible token holders   |
-| **Jackpot Fund**   | 3%    | Funds the lottery-style jackpot draws            |
-| **Buyback & LP**   | 2%    | Automatic token buybacks and liquidity injection |
-
-> **Note:** The Treasury allocation is currently redirected to Buyback & LP to strengthen liquidity. Once sufficient liquidity depth is achieved, Treasury allocation will be restored and automatic burns will be enabled to increase deflationary pressure.
-
-***
-
-### How Taxes Flow Through the Ecosystem
-
-```
-Every Transaction
-       │
-       ▼
-   10% Tax Collected
-       │
-       ▼
- Converted to SOL
-       │
-       ├──► 50% → Holder Rewards (distributed proportionally)
-       │
-       ├──► 30% → Jackpot Fund (lottery draws)
-       │
-       └──► 20% → Buyback & LP (market support)
-```
-
-#### Holder Rewards (5%)
-
-Distributed automatically to all holders with 100,000+ TRT. Your share is based on what percentage of the total supply you hold. No staking or claiming required — rewards land directly in your wallet.
-
-#### Jackpot Fund (3%)
-
-Accumulates until reaching the threshold (0.2 SOL), then triggers a lottery draw. One lucky holder wins the entire pot. Both new and existing holders are eligible.
-
-#### Buyback & Liquidity (2%)
-
-The system automatically:
-
-1. Uses half the funds to buy TRT from the open market
-2. Pairs the purchased TRT with the remaining SOL
-3. Injects both into the liquidity pool
-
-This creates constant buy pressure and deepens liquidity over time.
+The collected tax is converted to SOL and split as follows: **5%** to holder rewards, **3%** to jackpot, **2%** to buyback & LP. See [Rewards](rewards.md), [Lottery](lottery.md), and [Auto Buyback & LP](buyback-lp.md) for details.
 
 ***
 
@@ -129,9 +83,8 @@ TRT is designed to become scarcer over time through multiple mechanisms:
 
 | Mechanism           | Status     | Description                                                |
 | ------------------- | ---------- | ---------------------------------------------------------- |
-| **Community Burns** | ✅ Active   | Periodic burn campaigns destroy tokens permanently         |
 | **Automatic Burns** | ⏸️ Planned | Will be enabled when liquidity targets are met             |
-| **Buyback Burns**   | 🔄 Partial | Buybacks reduce circulating supply (currently added to LP) |
+| **Buyback & Lock**  | ✅ Active   | Bought tokens are added to permanently locked LP           |
 
 ***
 
