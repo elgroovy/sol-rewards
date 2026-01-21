@@ -26,25 +26,13 @@ layout:
 
 ### Token Overview
 
-| Property             | Value                                         |
-| -------------------- | --------------------------------------------- |
-| **Name**             | Test Rewards Token                            |
-| **Symbol**           | TRT                                           |
-| **Network**          | Solana (Mainnet)                              |
-| **Token Standard**   | SPL Token-2022                                |
-| **Decimals**         | 6                                             |
-| **Contract Address** | [LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST](https://solscan.io/account/LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST?cluster=mainnet-beta) |
-| **Launch Date**      | March 2025                                    |
+<table><thead><tr><th width="280.0703125">Property</th><th>Value</th></tr></thead><tbody><tr><td><strong>Name</strong></td><td>Test Rewards Token</td></tr><tr><td><strong>Symbol</strong></td><td>TRT</td></tr><tr><td><strong>Network</strong></td><td>Solana (Mainnet)</td></tr><tr><td><strong>Token Standard</strong></td><td>SPL Token-2022</td></tr><tr><td><strong>Decimals</strong></td><td>6</td></tr><tr><td><strong>Contract Address</strong></td><td><a href="https://solscan.io/account/LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST?cluster=mainnet-beta">LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST</a></td></tr><tr><td><strong>Launch Date</strong></td><td>March 2025</td></tr></tbody></table>
 
 ***
 
 ### Supply
 
-| Metric             | Amount                      |
-| ------------------ | --------------------------- |
-| **Initial Supply** | 1,000,000,000 TRT           |
-| **Current Supply** | \~825,313,377 TRT           |
-| **Burned**         | \~174,686,623 TRT (\~17.5%) |
+<table><thead><tr><th width="280.0390625">Metric</th><th>Amount</th></tr></thead><tbody><tr><td><strong>Initial Supply</strong></td><td>1,000,000,000 TRT</td></tr><tr><td><strong>Current Supply</strong></td><td>~825,313,377 TRT</td></tr><tr><td><strong>Burned</strong></td><td>~174,686,623 TRT (~17.5%)</td></tr></tbody></table>
 
 The token launched with 1 billion tokens. Through a series of community burn campaigns, approximately 17.5% of the supply has been permanently destroyed, making TRT a deflationary asset.
 
@@ -81,16 +69,16 @@ The collected tax is converted to SOL and split as follows: **5%** to holder rew
 
 TRT is designed to become scarcer over time through multiple mechanisms:
 
-| Mechanism           | Status     | Description                                                |
-| ------------------- | ---------- | ---------------------------------------------------------- |
-| **Automatic Burns** | ⏸️ Planned | Will be enabled when liquidity targets are met             |
-| **Buyback & Lock**  | ✅ Active   | Bought tokens are added to permanently locked LP           |
+| Mechanism           | Status     | Description                                      |
+| ------------------- | ---------- | ------------------------------------------------ |
+| **Automatic Burns** | ⏸️ Planned | Will be enabled when liquidity targets are met   |
+| **Buyback & Lock**  | ✅ Active   | Bought tokens are added to permanently locked LP |
 
 ***
 
 ### Deployer Wallet
 
-<table><thead><tr><th width="119.40625">Wallet</th><th width="394.62890625">Address</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Deployer</strong></td><td><a href="https://solscan.io/account/zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D?cluster=mainnet-beta">zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D</td><td>Token deployment and initial distribution</td></tr></tbody></table>
+<table><thead><tr><th width="109.62109375">Wallet</th><th width="429.64453125">Address</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Deployer</strong></td><td><a href="https://solscan.io/account/zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D?cluster=mainnet-beta">zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D</a></td><td>Token deployment and initial distribution</td></tr></tbody></table>
 
 ***
 
@@ -98,7 +86,7 @@ TRT is designed to become scarcer over time through multiple mechanisms:
 
 The protocol uses four dedicated wallets for ongoing operations, each with a custom vanity address for easy identification:
 
-<table><thead><tr><th width="122.79296875">Wallet</th><th width="391.68359375">Address</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Rewards</strong></td><td><a href="https://solscan.io/account/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES?cluster=mainnet-beta">nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES</td><td>Collects and distributes holder rewards</td></tr><tr><td><strong>Jackpot</strong></td><td><a href="https://solscan.io/account/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK?cluster=mainnet-beta">RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK</td><td>Holds funds for lottery draws</td></tr><tr><td><strong>Treasury</strong></td><td><a href="https://solscan.io/account/LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA?cluster=mainnet-beta">LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA</td><td>Project development and operations</td></tr><tr><td><strong>Buyback</strong></td><td><a href="https://solscan.io/account/gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB?cluster=mainnet-beta">gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB</td><td>Executes buybacks and LP injection</td></tr></tbody></table>
+<table><thead><tr><th width="110.359375">Wallet</th><th width="429.56640625">Address</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Rewards</strong></td><td><a href="https://solscan.io/account/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES?cluster=mainnet-beta">nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES</a></td><td>Collects and distributes holder rewards</td></tr><tr><td><strong>Jackpot</strong></td><td><a href="https://solscan.io/account/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK?cluster=mainnet-beta">RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK</a></td><td>Holds funds for lottery draws</td></tr><tr><td><strong>Treasury</strong></td><td><a href="https://solscan.io/account/LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA?cluster=mainnet-beta">LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA</a></td><td>Project development and operations</td></tr><tr><td><strong>Buyback</strong></td><td><a href="https://solscan.io/account/gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB?cluster=mainnet-beta">gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB</a></td><td>Executes buybacks and LP injection</td></tr></tbody></table>
 
 ***
 
