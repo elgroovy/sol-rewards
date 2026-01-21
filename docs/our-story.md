@@ -21,7 +21,7 @@ layout:
     visible: true
 ---
 
-# How It Started
+# The Origin
 
 ### How It Started
 

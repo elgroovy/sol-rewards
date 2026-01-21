@@ -1,6 +1,6 @@
 # Table of contents
 
-* [How It Started](README.md)
+* [The Origin](our-story.md)
 * [Tokenomics](tokenomics.md)
 * [Rewards](rewards.md)
 * [Lottery](lottery.md)
