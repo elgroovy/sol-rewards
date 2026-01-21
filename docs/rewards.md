@@ -36,7 +36,7 @@ The rewards system automatically collects transaction fees from token trades and
 
 To receive rewards, you must:
 
-* **Hold at least 100,000 tokens** in your wallet
+* **Hold at least 100,000 tokens** in your wallet (this minimum may be adjusted as TRT grows)
 * **Have some SOL in your wallet** (to ensure your wallet is active on Solana)
 * **Not be a system wallet** (liquidity pools, fee accounts, and other automated wallets are excluded)
 
@@ -76,12 +76,12 @@ Your individual reward is calculated using **square root weighting**. This compr
 
 **Example:** Two holders splitting a 1 SOL reward pool (total supply: 1 billion)
 
-| Holder       | Tokens     | % of Supply | With Linear | With Sqrt |
-| ------------ | ---------- | ----------- | ----------- | --------- |
-| Whale        | 50,000,000 | 5%          | 0.91 SOL    | 0.76 SOL  |
-| Small holder | 5,000,000  | 0.5%        | 0.09 SOL    | 0.24 SOL  |
+| Holder         | Tokens     | % of Supply | With Linear | With Sqrt |
+| -------------- | ---------- | ----------- | ----------- | --------- |
+| Large holder   | 10,000,000 | 1%          | 0.91 SOL    | 0.76 SOL  |
+| Smaller holder | 1,000,000  | 0.1%        | 0.09 SOL    | 0.24 SOL  |
 
-The whale has 10x more tokens but only gets \~3x more rewards (instead of 10x). The difference is redistributed to the smaller holder.
+The large holder has 10x more tokens but only gets ~3x more rewards (instead of 10x). The difference is redistributed to the smaller holder.
 
 Your share is based on total supply, so it stays consistent as long as your holdings don't change — new holders joining won't reduce your rewards.
 
