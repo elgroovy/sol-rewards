@@ -33,7 +33,7 @@ layout:
 | **Network**          | Solana (Mainnet)                              |
 | **Token Standard**   | SPL Token-2022                                |
 | **Decimals**         | 6                                             |
-| **Contract Address** | `LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST` |
+| **Contract Address** | [LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST](https://solscan.io/account/LVCKzJ9zgzF7nbw8zE7Nxtua4JdAUWfneDNSXVgTEST?cluster=mainnet-beta) |
 | **Launch Date**      | March 2025                                    |
 
 ***
@@ -90,7 +90,7 @@ TRT is designed to become scarcer over time through multiple mechanisms:
 
 ### Deployer Wallet
 
-<table><thead><tr><th width="119.40625">Wallet</th><th width="394.62890625">Address</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Deployer</strong></td><td><code>zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D</code></td><td>Token deployment and initial distribution</td></tr></tbody></table>
+<table><thead><tr><th width="119.40625">Wallet</th><th width="394.62890625">Address</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Deployer</strong></td><td><a href="https://solscan.io/account/zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D?cluster=mainnet-beta">zVioKp1fSEQk65UCUQE1nr7fsqmpE3ZLehy7pxBS14D</td><td>Token deployment and initial distribution</td></tr></tbody></table>
 
 ***
 
@@ -98,7 +98,7 @@ TRT is designed to become scarcer over time through multiple mechanisms:
 
 The protocol uses four dedicated wallets for ongoing operations, each with a custom vanity address for easy identification:
 
-<table><thead><tr><th width="122.79296875">Wallet</th><th width="391.68359375">Address</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Rewards</strong></td><td><code>nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES</code></td><td>Collects and distributes holder rewards</td></tr><tr><td><strong>Jackpot</strong></td><td><code>RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK</code></td><td>Holds funds for lottery draws</td></tr><tr><td><strong>Treasury</strong></td><td><code>LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA</code></td><td>Project development and operations</td></tr><tr><td><strong>Buyback</strong></td><td><code>gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB</code></td><td>Executes buybacks and LP injection</td></tr></tbody></table>
+<table><thead><tr><th width="122.79296875">Wallet</th><th width="391.68359375">Address</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Rewards</strong></td><td><a href="https://solscan.io/account/nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES?cluster=mainnet-beta">nHboSbMF45fUSbqPs6175ysTXj9m6FaFbqryHi7FEES</td><td>Collects and distributes holder rewards</td></tr><tr><td><strong>Jackpot</strong></td><td><a href="https://solscan.io/account/RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK?cluster=mainnet-beta">RLmJJDUq92SpsbqAXu5HjnMk8qW5KpuNiC6AHxBJACK</td><td>Holds funds for lottery draws</td></tr><tr><td><strong>Treasury</strong></td><td><a href="https://solscan.io/account/LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA?cluster=mainnet-beta">LKN4hxQh8whrWxC6jG9zHiC3dEP8F8Qus4D9ykkTREA</td><td>Project development and operations</td></tr><tr><td><strong>Buyback</strong></td><td><a href="https://solscan.io/account/gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB?cluster=mainnet-beta">gBzAZimUfgNm7LdbiWwcg8o41iefYtVexHTiadnBUYB</td><td>Executes buybacks and LP injection</td></tr></tbody></table>
 
 ***
 
