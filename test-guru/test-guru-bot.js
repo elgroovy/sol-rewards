@@ -1,16 +1,32 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { GoogleGenAI } from "@google/genai";
 import fs from 'fs';
+import path from 'path';
+import { Config } from '../config.js';
 
-const GOOGLE_AI_API_KEY = 'AIzaSyDTz-epGmwh0ZQ9muOzfME8HWBt_pyTGt8';
-const TG_BOT_TOKEN = '7940512914:AAE5IGAtTQ7urC8LvPn-RFOQk15VHNdo5ME';
-
-const chatId = -1002333200183;
+const chatId = Number(Config.telegramChatId);
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
+function loadDocs() {
+    const docsDir = path.join(process.cwd(), '..', 'docs');
+    const files = fs.readdirSync(docsDir).filter(f => f.endsWith('.md'));
+
+    let docs = '';
+    for (const file of files) {
+        const content = fs.readFileSync(path.join(docsDir, file), 'utf-8');
+        docs += `\n## ${file.replace('.md', '')}\n${content}\n`;
+    }
+    return docs;
+}
+
 async function main() {
-    const ai = new GoogleGenAI({ apiKey: GOOGLE_AI_API_KEY });
-    const systemInstruction = fs.readFileSync('system_instruction.txt', 'utf-8');
+    const ai = new GoogleGenAI({ apiKey: Config.googleAiApiKey });
+
+    const loadSystemInstruction = () => {
+        return fs.readFileSync('system_instruction.txt', 'utf-8') + loadDocs();
+    };
+
+    let systemInstruction = loadSystemInstruction();
 
     let chat = ai.chats.create({
         model: "gemini-2.0-flash",
@@ -20,7 +36,10 @@ async function main() {
         history: [],
     });
 
-    const resetChat = () => {
+    const resetChat = (newInstruction = null) => {
+        if (newInstruction) {
+            systemInstruction = newInstruction;
+        }
         chat = ai.chats.create({
             model: "gemini-2.0-flash",
             config: {
@@ -28,10 +47,10 @@ async function main() {
             },
             history: [],
         });
-        console.log('Chat history reset due to inactivity.');
+        console.log('Chat history reset.');
     };
 
-    const bot = new TelegramBot(TG_BOT_TOKEN, { polling: true });
+    const bot = new TelegramBot(Config.guruBotToken, { polling: true });
 
     let inactivityTimer;
 
@@ -40,15 +59,32 @@ async function main() {
         if (inactivityTimer) clearTimeout(inactivityTimer);
         inactivityTimer = setTimeout(resetChat, INACTIVITY_TIMEOUT);
 
+        // Handle /refresh command
+        if (msg.text === '/refresh') {
+            const newInstruction = loadSystemInstruction();
+            resetChat(newInstruction);
+            console.log('Documentation refreshed.');
+            bot.sendMessage(msg.chat.id, 'Knowledge refreshed.');
+            return;
+        }
+
         const botInfo = await bot.getMe();
+        console.log('Received message:', msg.text, 'from chat:', msg.chat.id);
 
         // Respond when the bot is mentioned or replied to
         if (msg.text && (msg.text.includes(`@${botInfo.username}`) || msg.reply_to_message?.from?.username === botInfo.username)) {
+            console.log('Responding to message...');
             const escapeMarkdownV2 = (text) => {
                 return text.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
             };
 
-            const response = await chat.sendMessage({ message: msg.text });
+            // Include context from the replied-to message
+            let messageToSend = msg.text;
+            if (msg.reply_to_message?.text) {
+                messageToSend = `[User is replying to your previous message: "${msg.reply_to_message.text}"]\n\nUser's reply: ${msg.text}`;
+            }
+
+            const response = await chat.sendMessage({ message: messageToSend });
             const escapedText = escapeMarkdownV2(response.text);
             bot.sendMessage(chatId, escapedText, { parse_mode: 'MarkdownV2' });
         }
