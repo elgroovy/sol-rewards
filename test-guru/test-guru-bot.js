@@ -131,6 +131,8 @@ async function handleMessage(msg, ctx) {
 }
 
 async function handleNewChatMembers(msg, ctx) {
+    console.log('New chat members event received from chat:', msg.chat.id);
+
     // Only respond in the configured chat
     if (msg.chat.id !== chatId) return;
 
