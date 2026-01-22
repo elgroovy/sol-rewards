@@ -80,7 +80,11 @@ async function main() {
 
             // Include context from the replied-to message
             let messageToSend = msg.text;
-            if (msg.reply_to_message?.text) {
+            if (msg.quote?.text) {
+                // User quoted a specific portion of the bot's message
+                messageToSend = `[User quoted this specific part of your message: "${msg.quote.text}"]\n\nUser's question/comment: ${msg.text}`;
+            } else if (msg.reply_to_message?.text) {
+                // User replied to the full message
                 messageToSend = `[User is replying to your previous message: "${msg.reply_to_message.text}"]\n\nUser's reply: ${msg.text}`;
             }
 
