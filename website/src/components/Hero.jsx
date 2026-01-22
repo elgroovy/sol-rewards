@@ -166,6 +166,18 @@ export default function Hero() {
 
               <div className="flex justify-center gap-4">
                 <a
+                  href="https://trt-2.gitbook.io/test-rewards-token"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="neon-hover rounded-2xl px-3 py-3 border border-white-400 hover:border-white-300 flex items-center bg-transparent hover:bg-yellow-500/20 font-semibold transition"
+                >
+                  <svg className="inline-block mr-2 h-5 w-5 align-middle" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 2H6c-1.206 0-3 .799-3 3v14c0 2.201 1.794 3 3 3h15v-2H6.012C5.55 19.988 5 19.806 5 19s.55-.988 1.012-1H21V4c0-1.103-.897-2-2-2zm0 14H5V5c0-.806.55-.988 1-1h13v12z"/>
+                  </svg>
+                  DOCS
+                </a>
+
+                <a
                   href="https://x.com/testrewardtoken"
                   className="neon-hover rounded-2xl px-3 py-3 border border-white-400 hover:border-white-300 flex items-center bg-white/0 hover:bg-cyan-400/10 transition font-medium"
                 >
@@ -199,6 +211,18 @@ export default function Hero() {
               >
                 <img src="https://dexscreener.com/favicon.ico" alt="DexScreener Logo" className="inline-block mr-2 h-5 align-middle" />
                 CHART
+              </a>
+
+              <a
+                href="https://trt-2.gitbook.io/test-rewards-token"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="neon-hover rounded-2xl px-3 py-3 border border-white-400 hover:border-white-300 flex items-center bg-transparent hover:bg-yellow-500/20 font-semibold transition"
+              >
+                <svg className="inline-block mr-2 h-5 w-5 align-middle" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 2H6c-1.206 0-3 .799-3 3v14c0 2.201 1.794 3 3 3h15v-2H6.012C5.55 19.988 5 19.806 5 19s.55-.988 1.012-1H21V4c0-1.103-.897-2-2-2zm0 14H5V5c0-.806.55-.988 1-1h13v12z"/>
+                </svg>
+                DOCS
               </a>
 
               <a

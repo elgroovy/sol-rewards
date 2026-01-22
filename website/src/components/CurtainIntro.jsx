@@ -13,6 +13,7 @@ export default function CurtainIntro({
   onComplete,
   fadeThreshold = 0.5,
   audioRef,
+  onAudioStart,
 }) {
   const videoRef = useRef(null);
   const [phase, setPhase] = useState("waiting"); // "waiting" | "playing" | "fading" | "done"
@@ -111,6 +112,9 @@ export default function CurtainIntro({
       audioRef.current.volume = 0.5;
       audioRef.current.play().catch(() => {});
     }
+
+    // Notify that intro has started (for showing mute button)
+    if (onAudioStart) onAudioStart();
 
     try {
       await video.play();
