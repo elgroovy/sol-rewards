@@ -40,10 +40,10 @@ To be eligible, you must hold at least **100,000 tokens** in your wallet.
 
 **Step 1: Sort holders into two groups**
 
-* **Old holders** — people who held tokens before the previous draw
-* **New holders** — people who started holding since the last draw
+* **Old holders** - people who held tokens before the previous draw
+* **New holders** - people who started holding since the last draw
 
-**Note:** If an old holder buys more tokens, they become a "new holder" for the next draw — giving them a chance at the larger new holder prize.
+**Note:** If an old holder buys more tokens, they become a "new holder" for the next draw - giving them a chance at the larger new holder prize.
 
 **Step 2: Pick one candidate from each group**
 
@@ -64,7 +64,7 @@ To be eligible, you must hold at least **100,000 tokens** in your wallet.
 | Old holder  | 20%              |
 | New holder  | 50%              |
 
-The remaining 30% rolls over to the next draw — this keeps the jackpot fund growing as long as there's trading volume.
+The remaining 30% rolls over to the next draw - this keeps the jackpot fund growing as long as there's trading volume.
 
 **Example:** Jackpot has 1 SOL
 
@@ -99,6 +99,6 @@ Winner selection uses cryptographic randomness (the same secure randomness used 
 
 ***
 
-**In short:** Hold at least 100,000 tokens, and you're automatically entered. When the jackpot hits 0.1 SOL, one lucky holder wins — with new holders getting a bigger prize to reward early adoption.
+**In short:** Hold at least 100,000 tokens, and you're automatically entered. When the jackpot hits 0.1 SOL, one lucky holder wins - with new holders getting a bigger prize to reward early adoption.
 
 <figure><img src=".gitbook/assets/jackbot_transparent.png" alt="" width="375"><figcaption></figcaption></figure>

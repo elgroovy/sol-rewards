@@ -63,7 +63,7 @@ The purchased tokens are paired with the remaining SOL and added to the liquidit
 | -------------------- | -------------------------------------------------------- |
 | **Buy pressure**     | Constant buying from the market supports price           |
 | **Deeper liquidity** | Larger trades have less price impact                     |
-| **Permanent LP**     | Liquidity is added, not removed — it compounds over time |
+| **Permanent LP**     | Liquidity is added, not removed - it compounds over time |
 
 ***
 
@@ -99,4 +99,4 @@ After each buyback cycle, a notification is sent to Telegram showing:
 
 ***
 
-**In short:** 2% of every trade automatically buys back tokens and adds them as permanent liquidity — creating sustained buy pressure and a deeper pool over time.
+**In short:** 2% of every trade automatically buys back tokens and adds them as permanent liquidity - creating sustained buy pressure and a deeper pool over time.

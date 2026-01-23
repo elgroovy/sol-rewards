@@ -72,7 +72,7 @@ The converted SOL is divided into three portions:
 
 #### Step 4: Calculating Your Share
 
-Your individual reward is calculated using **square root weighting**. This compresses the gap between large and small holders — whales still earn more, but smaller holders get a fairer slice of the pie.
+Your individual reward is calculated using **square root weighting**. This compresses the gap between large and small holders - whales still earn more, but smaller holders get a fairer slice of the pie.
 
 **Example:** Two holders splitting a 1 SOL reward pool (total supply: 1 billion)
 
@@ -83,7 +83,7 @@ Your individual reward is calculated using **square root weighting**. This compr
 
 The large holder has 10x more tokens but only gets ~3x more rewards (instead of 10x). The difference is redistributed to the smaller holder.
 
-Your share is based on total supply, so it stays consistent as long as your holdings don't change — new holders joining won't reduce your rewards.
+Your share is based on total supply, so it stays consistent as long as your holdings don't change - new holders joining won't reduce your rewards.
 
 #### Step 5: Batch Distribution
 
@@ -93,7 +93,7 @@ Because Solana has transaction size limits, rewards are sent out in batches of 1
 
 ### Pending Rewards for Small Holders
 
-If your calculated reward for a distribution cycle is very small (below 0.00005 SOL), it won't be sent immediately — but it's **not lost**. Instead, your reward is saved and accumulates over multiple cycles.
+If your calculated reward for a distribution cycle is very small (below 0.00005 SOL), it won't be sent immediately - but it's **not lost**. Instead, your reward is saved and accumulates over multiple cycles.
 
 Once your accumulated rewards reach the minimum threshold, they are automatically sent to your wallet. This ensures that even smaller holders eventually receive their fair share without being skipped entirely.
 
@@ -103,7 +103,7 @@ Once your accumulated rewards reach the minimum threshold, they are automaticall
 
 * **Cycle frequency:** Every 5 minutes, the system checks if there are enough accumulated tokens
 * **Trigger threshold:** Distribution only occurs when at least 10,000 tokens have been collected
-* **Delivery:** Once triggered, rewards are sent directly to your wallet — no claiming required
+* **Delivery:** Once triggered, rewards are sent directly to your wallet - no claiming required
 
 ***
 
@@ -111,11 +111,11 @@ Once your accumulated rewards reach the minimum threshold, they are automaticall
 
 The following are automatically filtered out and don't receive rewards:
 
-* **System wallets** — Fee recipient, jackpot, buyback, and burn wallets
-* **Liquidity pool vaults** — Automated market maker reserves
-* **Program accounts** — Smart contract addresses
-* **Wallets below minimum** — Holdings under 100,000 tokens
-* **Empty wallets** — Wallets with zero SOL balance
+* **System wallets** - Fee recipient, jackpot, buyback, and burn wallets
+* **Liquidity pool vaults** - Automated market maker reserves
+* **Program accounts** - Smart contract addresses
+* **Wallets below minimum** - Holdings under 100,000 tokens
+* **Empty wallets** - Wallets with zero SOL balance
 
 ***
 
@@ -145,6 +145,6 @@ After each distribution cycle, a notification is sent to the Telegram bot showin
 
 ***
 
-**In short:** Hold at least 100,000 tokens, keep some SOL in your wallet, and rewards will automatically flow to you based on square root weighting — giving smaller holders a fairer share. No staking or claiming required.
+**In short:** Hold at least 100,000 tokens, keep some SOL in your wallet, and rewards will automatically flow to you based on square root weighting - giving smaller holders a fairer share. No staking or claiming required.
 
 <figure><img src=".gitbook/assets/trt-notif-bot-transparent.png" alt="" width="375"><figcaption></figcaption></figure>

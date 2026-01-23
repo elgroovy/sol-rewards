@@ -22,7 +22,7 @@ layout:
 
 # Test Guru
 
-<figure><img src=".gitbook/assets/test-guru.png" alt="" width="375"><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/test-guru.jpg" alt="" width="375"><figcaption></figcaption></figure>
 
 ## Your AI Guide to TRT
 

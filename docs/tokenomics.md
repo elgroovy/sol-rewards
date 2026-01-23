@@ -60,7 +60,7 @@ The second day after launch, liquidity was significantly increased through an in
 
 ### Transaction Tax
 
-Every buy, sell, and transfer incurs a **10% tax**. This tax is automatically collected using Solana's Token-2022 transfer fee extension — no external contracts or manual intervention required.
+Every buy, sell, and transfer incurs a **10% tax**. This tax is automatically collected using Solana's Token-2022 transfer fee extension - no external contracts or manual intervention required.
 
 #### Tax Distribution
 
@@ -104,4 +104,4 @@ The protocol uses four dedicated wallets for ongoing operations, each with a cus
 
 ### Summary
 
-TRT combines automatic rewards, gamified jackpots, and sustainable tokenomics into a single ecosystem. The 10% tax funds continuous value return to holders while buybacks and burns create long-term deflationary pressure. No staking complexity, no manual claims — just hold and earn.
+TRT combines automatic rewards, gamified jackpots, and sustainable tokenomics into a single ecosystem. The 10% tax funds continuous value return to holders while buybacks and burns create long-term deflationary pressure. No staking complexity, no manual claims - just hold and earn.
