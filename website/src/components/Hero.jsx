@@ -326,14 +326,6 @@ export default function Hero() {
         </Reveal>
       </div>
 
-      {/* Jackpot character - sits in the gap between Hero and Utility sections */}
-      <div className="absolute bottom-0 right-[5%] md:right-[8%] lg:right-[10%] translate-y-[110%] z-10 pointer-events-none">
-        <img 
-          src="/jackpot-character.gif" 
-          alt="Jackpot" 
-          className="w-28 md:w-48 lg:w-56 h-auto"
-        />
-      </div>
     </section>
   );
 }
