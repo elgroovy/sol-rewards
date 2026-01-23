@@ -9,6 +9,7 @@ export default function App() {
   const [introComplete, setIntroComplete] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [audioStarted, setAudioStarted] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
   const audioRef = useRef(null);
 
   // Lock scroll during intro, unlock and reset when complete
@@ -60,7 +61,7 @@ export default function App() {
       )}
 
       {/* Audio Mute/Unmute Button - visible once audio starts */}
-      {audioStarted && (
+      {audioStarted && !calcOpen && (
         <button
           onClick={toggleMute}
           className="fixed top-3 right-3 md:top-6 md:right-6 z-[200] p-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 transition-all duration-200 backdrop-blur-sm"
@@ -87,7 +88,7 @@ export default function App() {
         <>
           <Hero />
           <Utility />
-          <Fees />
+          <Fees calcOpen={calcOpen} setCalcOpen={setCalcOpen} />
           <SiteFooter />
         </>
       )}

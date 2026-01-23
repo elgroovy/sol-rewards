@@ -4,7 +4,7 @@ import PhysicsTitle from "./PhysicsTitle";
 import RewardsCalculatorModal from "./RewardsCalculatorModal";
 import Reveal from "./Reveal";
 
-export default function Fees() {
+export default function Fees({ calcOpen, setCalcOpen }) {
   const boxes = [
     { p: "10%", l: "TAX", s: "(Buy / Sell / Transfer)" },
     { p: "5%", l: "Holders", s: "Reflections on every trade" },
@@ -12,7 +12,6 @@ export default function Fees() {
     { p: "2%", l: "Buyback / Liquidity", s: "Automated buybacks and liquidity growth" },
   ];
 
-  const [calcOpen, setCalcOpen] = useState(false);
   const [showThumbsUp, setShowThumbsUp] = useState(false);
   const [showMiddleFinger, setShowMiddleFinger] = useState(false);
   const [clickCount, setClickCount] = useState(0);
