@@ -226,7 +226,13 @@ async function main() {
     let systemInstruction = loadSystemInstruction();
 
     const ctx = {
-        bot: new TelegramBot(Config.guruBotToken, { polling: true }),
+        bot: new TelegramBot(Config.guruBotToken, {
+            polling: {
+                params: {
+                    allowed_updates: ['message', 'chat_member']
+                }
+            }
+        }),
         chat: null,
         welcomeTemplate: loadWelcomeTemplate(),
         welcomeAnimationFileId: null,
@@ -318,6 +324,27 @@ Reply with only YES or NO.`;
 
     ctx.bot.on('message', (msg) => handleMessage(msg, ctx));
     ctx.bot.on('new_chat_members', (msg) => handleNewChatMembers(msg, ctx));
+
+    // Handle chat_member updates (more reliable for larger groups)
+    ctx.bot.on('chat_member', (update) => {
+        console.log('chat_member update received');
+
+        const oldMember = update.old_chat_member;
+        const newMember = update.new_chat_member;
+
+        // Check if someone joined: is_member changed from false to true, or status became 'member'/'administrator'
+        const wasInChat = oldMember?.is_member || ['member', 'administrator', 'creator'].includes(oldMember?.status);
+        const isNowInChat = newMember?.is_member || ['member', 'administrator', 'creator'].includes(newMember?.status);
+
+        if (!wasInChat && isNowInChat) {
+            console.log('User joined the chat:', newMember.user.first_name);
+            const fakeMsg = {
+                chat: update.chat,
+                new_chat_members: [newMember.user]
+            };
+            handleNewChatMembers(fakeMsg, ctx);
+        }
+    });
 }
 
 main().catch((error) => { console.error(error) });
