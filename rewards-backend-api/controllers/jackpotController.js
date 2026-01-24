@@ -78,7 +78,8 @@ export async function getEligibleHolders(req, res) {
         const holders = rows.map(row => row.wallet_address); // Extract only the wallet_address values
         res.json({ holders: holders });
     } catch (err) {
-        res.status(500).json({ message: 'Database error', error: err });
+        console.error('getEligibleHolders error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 }
 

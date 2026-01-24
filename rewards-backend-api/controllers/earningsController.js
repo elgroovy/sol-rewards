@@ -192,15 +192,15 @@ export async function getEarningsHistory(req, res) {
     );
     const total = Number(countRows[0]?.c || 0);
 
-    // Fetch page of events
+    // Fetch page of events (using parameterized query for LIMIT/OFFSET to prevent SQL injection)
     const sql = `
       SELECT signature, slot, block_time, asset_type, token_mint, amount_raw AS amount, decimals
       FROM rewards_events
       WHERE wallet = ?
       ORDER BY block_time DESC, slot DESC
-      LIMIT ${pageSize} OFFSET ${offset}
+      LIMIT ? OFFSET ?
     `;
-    const [rows] = await db.query(sql, [address]);
+    const [rows] = await db.query(sql, [address, pageSize, offset]);
 
     const eventMints = rows
       .filter(r => r.asset_type === 'SPL')
