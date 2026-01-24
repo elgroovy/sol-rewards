@@ -54,13 +54,21 @@ async function handleMessage(msg, ctx) {
         console.log('Chat reset due to inactivity. Attention mode off.');
     }, INACTIVITY_TIMEOUT);
 
-    // Handle /refresh command
+    // Handle /refresh command (admin-only)
     if (msg.text === '/refresh') {
-        const newInstruction = ctx.loadSystemInstruction();
-        ctx.welcomeTemplate = loadWelcomeTemplate();
-        ctx.resetChat(newInstruction);
-        console.log('Documentation and welcome template refreshed.');
-        ctx.bot.sendMessage(msg.chat.id, 'Knowledge refreshed.');
+        try {
+            const member = await ctx.bot.getChatMember(msg.chat.id, msg.from.id);
+            if (!['administrator', 'creator'].includes(member.status)) {
+                return; // Silently ignore non-admins
+            }
+            const newInstruction = ctx.loadSystemInstruction();
+            ctx.welcomeTemplate = loadWelcomeTemplate();
+            ctx.resetChat(newInstruction);
+            console.log('Documentation and welcome template refreshed.');
+            ctx.bot.sendMessage(msg.chat.id, 'Knowledge refreshed.');
+        } catch (error) {
+            console.error('Error checking admin status:', error);
+        }
         return;
     }
 
@@ -72,8 +80,8 @@ async function handleMessage(msg, ctx) {
     const isMentioned = msg.text && msg.text.includes(`@${botInfo.username}`);
     const isRepliedTo = msg.reply_to_message?.from?.username === botInfo.username;
 
-    // If mentioned, activate attention mode
-    if (isMentioned) {
+    // If mentioned or replied to, activate attention mode
+    if (isMentioned || isRepliedTo) {
         ctx.isAttentive = true;
         if (ctx.attentionTimer) clearTimeout(ctx.attentionTimer);
         ctx.attentionTimer = setTimeout(() => {
@@ -117,6 +125,15 @@ async function handleMessage(msg, ctx) {
         let responseText = response.text.replace(/\[Message from user "[^"]*"\]\s*/gi, '');
         // Also strip usernames in brackets like [eXper1enced]
         responseText = responseText.replace(/\[([^\]]+)\]/g, '$1');
+
+        // Extract and preserve <a> tags before escaping
+        const linkPlaceholders = [];
+        responseText = responseText.replace(/<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/gi, (_match, href, text) => {
+            const placeholder = `__LINK_${linkPlaceholders.length}__`;
+            linkPlaceholders.push(`<a href="${href}">${escapeHtml(text)}</a>`);
+            return placeholder;
+        });
+
         // Convert user's name to clickable mention (case-insensitive)
         const userId = msg.from.id;
         const nameRegex = new RegExp(`\\b${userDisplayName}\\b`, 'gi');
@@ -126,6 +143,10 @@ async function handleMessage(msg, ctx) {
         let finalText = escapeHtml(responseText);
         // Re-insert the user mention (unescape it)
         finalText = finalText.replace(escapeHtml(userMention), userMention);
+        // Re-insert preserved links
+        linkPlaceholders.forEach((link, i) => {
+            finalText = finalText.replace(`__LINK_${i}__`, link);
+        });
         ctx.bot.sendMessage(msg.chat.id, finalText, { parse_mode: 'HTML' });
     }
 }
