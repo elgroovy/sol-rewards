@@ -44,6 +44,10 @@ When someone joins the community, Test Guru sends a personalized welcome message
 
 After you mention Test Guru, it enters "attention mode" for 15 minutes. During this time, it can respond to follow-up messages without needing to be mentioned again - making conversations feel more natural.
 
+**Good Sense of Humor**
+
+Test Guru can crack a good joke when you ask - just don't expect boring puns.
+
 ***
 
 ### How to Talk to Test Guru
@@ -80,9 +84,10 @@ The bot only responds in the official TRT community chat - it won't respond to r
 | ------- | ------- |
 | Platform | Telegram |
 | How to activate | Mention @TestGuruBot or reply to its messages |
-| Attention mode | 15 minutes after being mentioned |
+| Attention mode | 15 minutes after being mentioned or replied to |
 | Knowledge | Full TRT documentation |
 | Personality | Calm, wise, uses simple metaphors |
+| Bonus | Good sense of humor |
 
 ***
 
