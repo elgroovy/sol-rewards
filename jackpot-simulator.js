@@ -61,7 +61,8 @@ async function updateHoldersSnapshot(addresses)
         const response = await fetch(Config.backendUrl + "/jackpots/holders", {
             method: "PUT",
             headers: {
-            "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-API-Key": Config.adminApiKey
             },
             body: JSON.stringify({ addresses: addresses })
         });
@@ -115,7 +116,8 @@ async function notifyTelegramBot(notificationPayload)
         const response = await fetch(Config.backendUrl + "/jackpots/notify", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-API-Key": Config.adminApiKey
             },
             body: JSON.stringify(notificationPayload)
         });

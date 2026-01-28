@@ -11,6 +11,7 @@ export const Config = {
     heliusDevnetUrl: `https://devnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`,
 
     backendUrl: `${process.env.BACKEND_URL || "http://localhost:3000"}`,
+    adminApiKey: process.env.ADMIN_API_KEY || "",
 
     // Wallet key files
     feeRecipientKeyFile: process.env.FEE_RECIPIENT_WALLET_KEY_FILE,
