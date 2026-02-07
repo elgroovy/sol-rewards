@@ -27,7 +27,7 @@ import WebSocket from 'ws';
 let jackpotKeypair, treasuryKeypair = null;
 let jackpotCheckInterval = Constants.kJackpotCheckInterval;
 
-const SIMULATION_MODE = false; // Set to false for production
+const SIMULATION_MODE = true; // Set to false for production
 
 // Connection to the cluster
 const connection = new Connection(Config.heliusMainnetUrl, "confirmed");
@@ -145,7 +145,7 @@ async function sendSimpleMessage(message, delay)
         await notifyTelegramBot({
         messageType: "simple",
         messageText: message,
-        mediaUrl: 'http://ipfs.io/ipfs/bafkreig3iv4xnddywcs2hetj552wtr3lpa4qadxivb53cpmhvxeddi3bki',
+        mediaUrl: 'http://ipfs.io/ipfs/bafkreidtv6rs5czmj4twbgp4hzydc7hqdjrxx2vestmj3p5ydzt7xzgavi',
         isAnimated: true
     });
 
