@@ -50,7 +50,8 @@ export async function notify(req, res) {
         if (isAnimated) {
             promise = bot.sendAnimation(Config.telegramChatId, mediaUrl, {
                 caption: formattedMessage,
-                parse_mode: 'Markdown'
+                parse_mode: 'Markdown',
+                width: 426
             });
         }
         else {
