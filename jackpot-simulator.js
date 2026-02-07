@@ -27,7 +27,7 @@ import WebSocket from 'ws';
 let jackpotKeypair, treasuryKeypair = null;
 let jackpotCheckInterval = Constants.kJackpotCheckInterval;
 
-const SIMULATION_MODE = true; // Set to false for production
+const SIMULATION_MODE = false; // Set to false for production
 
 // Connection to the cluster
 const connection = new Connection(Config.heliusMainnetUrl, "confirmed");
