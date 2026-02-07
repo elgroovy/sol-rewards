@@ -18,8 +18,9 @@ export const publicLimiter = rateLimit({
 });
 
 /**
- * Stricter limiter for admin endpoints
- * 10 requests per 15 minutes (prevents brute force on API key)
+ * Limiter for admin endpoints
+ * Only counts failed requests to prevent API key brute force
+ * while allowing legitimate admin usage without throttling
  */
 export const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -27,5 +28,5 @@ export const adminLimiter = rateLimit({
   message: { error: 'Rate limit exceeded for admin endpoint' },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: false,
+  skipSuccessfulRequests: true,
 });
