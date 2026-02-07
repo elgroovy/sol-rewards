@@ -145,7 +145,7 @@ async function sendSimpleMessage(message, delay)
         await notifyTelegramBot({
         messageType: "simple",
         messageText: message,
-        mediaUrl: 'http://ipfs.io/ipfs/bafkreickxiijov32aotpy4zki3hhfi6bwmgxdvvfmomafxc2fijcmh2p6i',
+        mediaUrl: 'http://ipfs.io/ipfs/bafybeia3mxcvwri6cr3l4gwojdjh7ufofvwxhy5u7rq7qtywk33wvlqmqa',
         isAnimated: true
     });
 
@@ -162,7 +162,7 @@ async function simulateJackpotDraw(jackpotBalance, luckyOldHolder, luckyNewHolde
     await notifyTelegramBot({
         messageType: "simple",
         messageText: "Let's see who's the lucky winner of the jackpot!",
-        mediaUrl: 'https://ipfs.io/ipfs/bafybeigil4zx5aomfg2ssbyhbxfre5el7vcfan42ax766kmsrl5heqdueu',
+        mediaUrl: 'https://ipfs.io/ipfs/bafybeibm32poyfzc6gnesdfkbybqqouez44jr2qv3illetbf6s3xaif7wq',
         isAnimated: true
     });
 
@@ -171,7 +171,7 @@ async function simulateJackpotDraw(jackpotBalance, luckyOldHolder, luckyNewHolde
     await notifyTelegramBot({
         messageType: "simple",
         messageText: "",
-        mediaUrl: 'https://ipfs.io/ipfs/bafybeia7vfzsijvtmrlcmnwi6jyjc6hwtxntrsfp6oion54d5kozmxaqr4',
+        mediaUrl: 'https://ipfs.io/ipfs/bafybeiew7t6znacvubfgemslbn2nb74ineezlb4r5bltni3p2upu6u5e64',
         isAnimated: true
     });
 
@@ -180,7 +180,7 @@ async function simulateJackpotDraw(jackpotBalance, luckyOldHolder, luckyNewHolde
     await notifyTelegramBot({
         messageType: "simple",
         messageText: "",
-        mediaUrl: 'http://ipfs.io/ipfs/bafybeic2bbshok6dx6n4va2k4d4xu7ickrsq7hhah5mjltlps623gqmo7u',
+        mediaUrl: 'http://ipfs.io/ipfs/bafybeic3g5ejctcvbi4ahqvblanaeblhavpl7iujwf2zxnsc7y6itfb45u',
         isAnimated: true
     });
 
@@ -227,7 +227,7 @@ async function simulateJackpotDraw(jackpotBalance, luckyOldHolder, luckyNewHolde
         await notifyTelegramBot({
             messageType: "simple",
             messageText: messageText,
-            mediaUrl: 'http://ipfs.io/ipfs/bafybeicj3vtbn57fhsqdndrr45pndm2vtblfpege2tsheyn47zvilkvcke',
+            mediaUrl: 'http://ipfs.io/ipfs/bafybeihoxywkzfaipde7hwrdt72ukp52v3bjlrk5avyv62ob4pxi75gdbq',
             isAnimated: true
         });
     }
