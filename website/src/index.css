@@ -54,7 +54,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, #FC00FF, #00DBDE); /* Example gradient colors */
+  background: linear-gradient(to right, #ffffff, #d1b1b1, #7ef8fa);
   z-index: -1;
   border-radius: inherit; /* Inherit border-radius from parent */
 }
@@ -69,7 +69,7 @@
   font-size: 0.75rem; /* text-xs */
   text-transform: uppercase; /* uppercase */
   letter-spacing: 0.35em; /* tracking-[0.35em] */
-  color: #a5f3fc; /* text-cyan-300/80 */
+  color: #ffffff;
 }
 
 /* Gradient glow on hover for buttons */
