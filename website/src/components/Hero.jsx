@@ -255,70 +255,62 @@ export default function Hero() {
           <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             
             {/* Market Cap */}
-            <div className="stat-card-emerald">
-              <div>
-                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
-                  <img src="/icon-marketcap.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
-                  Market Cap
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-emerald-300">
-                  {loading ? (
-                    <span className="opacity-50">...</span>
-                  ) : (
-                    formatCurrency(stats.marketCap)
-                  )}
-                </div>
+            <div className="stat-card-neon neon-cream">
+              <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
+                <img src="/icon-marketcap.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
+                Market Cap
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-white">
+                {loading ? (
+                  <span className="opacity-50">...</span>
+                ) : (
+                  formatCurrency(stats.marketCap)
+                )}
               </div>
             </div>
 
             {/* Liquidity */}
-            <div className="stat-card-cyan">
-              <div>
-                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
-                  <img src="/icon-liquidity.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
-                  Liquidity
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-cyan-300">
-                  {loading ? (
-                    <span className="opacity-50">...</span>
-                  ) : (
-                    formatCurrency(stats.liquidity)
-                  )}
-                </div>
+            <div className="stat-card-neon neon-ice">
+              <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
+                <img src="/icon-liquidity.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
+                Liquidity
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-white">
+                {loading ? (
+                  <span className="opacity-50">...</span>
+                ) : (
+                  formatCurrency(stats.liquidity)
+                )}
               </div>
             </div>
 
             {/* Volume */}
-            <div className="stat-card-blue">
-              <div>
-                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
-                  <img src="/icon-volume.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
-                  Volume 24H
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-blue-300">
-                  {loading ? (
-                    <span className="opacity-50">...</span>
-                  ) : (
-                    formatCurrency(stats.volume)
-                  )}
-                </div>
+            <div className="stat-card-neon neon-lavender">
+              <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
+                <img src="/icon-volume.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
+                Volume 24H
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-white">
+                {loading ? (
+                  <span className="opacity-50">...</span>
+                ) : (
+                  formatCurrency(stats.volume)
+                )}
               </div>
             </div>
 
             {/* Holders */}
-            <div className="stat-card-purple">
-              <div>
-                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
-                  <img src="/icon-holders.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
-                  Holders
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-purple-300">
-                  {loading ? (
-                    <span className="opacity-50">...</span>
-                  ) : (
-                    formatHolders(stats.holders)
-                  )}
-                </div>
+            <div className="stat-card-neon neon-mint">
+              <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm uppercase tracking-wider text-white/70 mb-2">
+                <img src="/icon-holders.png" alt="" className="w-5 h-5 md:w-6 md:h-6" />
+                Holders
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-white">
+                {loading ? (
+                  <span className="opacity-50">...</span>
+                ) : (
+                  formatHolders(stats.holders)
+                )}
               </div>
             </div>
 

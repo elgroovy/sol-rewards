@@ -160,60 +160,53 @@
 /* tiny lift */
 .neon-hover:hover { transform: translateY(-1px); }
 
-/* === Stat card gradient borders and glow ===============================*/
-.stat-card-cyan {
+/* === Stat cards */
+.stat-card-neon {
   position: relative;
-  border-radius: 1rem;
-  padding: 2px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(14, 165, 233, 0.4) 100%);
-  box-shadow: 0 0 30px rgba(0, 212, 255, 0.15), 0 0 60px rgba(0, 212, 255, 0.08);
-}
-
-.stat-card-blue {
-  position: relative;
-  border-radius: 1rem;
-  padding: 2px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(99, 102, 241, 0.4) 100%);
-  box-shadow: 0 0 30px rgba(14, 165, 233, 0.15), 0 0 60px rgba(99, 102, 241, 0.08);
-}
-
-.stat-card-emerald {
-  position: relative;
-  border-radius: 1rem;
-  padding: 2px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(0, 201, 167, 0.4) 100%);
-  box-shadow: 0 0 30px rgba(0, 217, 163, 0.15), 0 0 60px rgba(0, 201, 167, 0.08);
-}
-
-.stat-card-purple {
-  position: relative;
-  border-radius: 1rem;
-  padding: 2px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%);
-  box-shadow: 0 0 30px rgba(192, 132, 252, 0.15), 0 0 60px rgba(168, 85, 247, 0.08);
-}
-
-/* Inner content styling for stat cards */
-.stat-card-cyan > div,
-.stat-card-blue > div,
-.stat-card-emerald > div,
-.stat-card-purple > div {
-  background-color: rgba(7, 11, 22, 0.6);
-  border-radius: 0.875rem;
-  padding: 0.625rem 0.5rem;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  
+  /* Layout & Shape */
+  padding: 1rem;
+  border-radius: 1rem; /* rounded-xl */
+  border: 1px solid var(--neon-color); /* The crisp border */
+  
+  /* Background */
+  background-color: rgba(7, 11, 22, 0.6); /* Semi-transparent dark bg */
+  backdrop-filter: blur(4px); /* Optional: nice blur effect if over elements */
+  
+  /* Glow */
+  box-shadow: 
+    0 0 4px -2px var(--neon-color), 
+    inset 0 10px 10px -5px var(--neon-color);
+  
+  transition: all 0.3s ease;
 }
 
-@media (min-width: 768px) {
-  .stat-card-cyan > div,
-  .stat-card-blue > div,
-  .stat-card-emerald > div,
-  .stat-card-purple > div {
-    padding: 0.875rem 0.75rem;
-  }
+/* Hover Effect: Intensify the glow and lift slightly */
+.stat-card-neon:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 0 20px -2px var(--neon-color), 
+    inset 0 5px 15px -5px var(--neon-color);
+  border-color: #fff; /* Optional: highlight border on hover */
+}
+
+.neon-cream {
+  --neon-color: rgb(245, 248, 212);
+}
+
+.neon-ice {
+  --neon-color: rgb(209, 255, 247);
+}
+
+.neon-lavender {
+  --neon-color: rgb(235, 224, 255);
+}
+
+.neon-mint {
+  --neon-color: rgb(217, 255, 230);
 }
