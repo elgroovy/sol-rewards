@@ -61,38 +61,22 @@ const toNumber = (s) => {
 
 function StatCard({ title, value, accent = "amber" }) {
   const accents = {
-    amber: {
-      border: "linear-gradient(135deg, #F5B971, #C4B5FD)",
-      glow: "rgba(245,185,113,.35)",
-      titleColor: "rgba(245,185,113,0.8)",
-    },
-    teal: {
-      border: "linear-gradient(135deg, #5EEAD4, #60A5FA)",
-      glow: "rgba(94,234,212,.35)",
-      titleColor: "rgba(94,234,212,0.8)",
-    },
+    amber: { titleColor: "#F5B971" },
+    teal: { titleColor: "#5EEAD4" },
   };
 
   const a = accents[accent];
 
   return (
-    <div
-      className="relative rounded-2xl p-[1.5px]"
-      style={{
-        background: a.border,
-        boxShadow: `0 0 40px ${a.glow}`,
-      }}
-    >
-      <div className="rounded-[14px] bg-[rgba(11,18,32,.75)] px-5 py-4 text-center">
-        <div 
-          className="text-xs uppercase tracking-wide"
-          style={{ color: a.titleColor }}
-        >
-          {title}
-        </div>
-        <div className="mt-1 text-2xl md:text-3xl font-semibold text-[#E6EAF2]">
-          {value}
-        </div>
+    <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-center">
+      <div
+        className="text-xs uppercase tracking-wide"
+        style={{ color: a.titleColor }}
+      >
+        {title}
+      </div>
+      <div className="mt-1 text-2xl md:text-3xl font-semibold text-[#E6EAF2]">
+        {value}
       </div>
     </div>
   );
