@@ -145,7 +145,7 @@ async function sendSimpleMessage(message, delay)
         await notifyTelegramBot({
         messageType: "simple",
         messageText: message,
-        mediaUrl: 'http://ipfs.io/ipfs/bafkreidtv6rs5czmj4twbgp4hzydc7hqdjrxx2vestmj3p5ydzt7xzgavi',
+        mediaUrl: 'http://ipfs.io/ipfs/bafkreifarttljadya22ljaxmoodq4fygd3rdaybc2i2titzfyicguat7hy',
         isAnimated: true
     });
 
