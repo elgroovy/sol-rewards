@@ -1,7 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { Config } from '../../config.js';
 
-const bot = new TelegramBot(Config.rewardsTelegramBotToken, { polling: true });
+const bot = new TelegramBot(Config.rewardsTelegramBotToken);
 
 // Example of a JSON structure for the /rewards/notify endpoint sent using CURL
 /*
@@ -72,7 +72,7 @@ export async function notify(req, res) {
 
         let txTotal = 0.0;
 
-        wallets.forEach((wallet, index) => {
+        wallets.forEach((wallet) => {
             const { walletAddress, amountEarned, tokenSymbol } = wallet;
 
             txTotal += amountEarned;
