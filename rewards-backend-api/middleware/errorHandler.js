@@ -8,6 +8,11 @@
  * Logs full errors server-side but returns sanitized messages to clients
  */
 export function errorHandler(err, req, res, next) {
+  // CORS errors are expected bot/scanner noise — suppress logging
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'Origin not allowed' });
+  }
+
   // Log full error for debugging (server-side only)
   console.error('Error:', {
     message: err.message,
@@ -16,11 +21,6 @@ export function errorHandler(err, req, res, next) {
     method: req.method,
     timestamp: new Date().toISOString(),
   });
-
-  // CORS errors
-  if (err.message === 'Not allowed by CORS') {
-    return res.status(403).json({ error: 'Origin not allowed' });
-  }
 
   // Validation errors
   if (err.name === 'ValidationError') {
