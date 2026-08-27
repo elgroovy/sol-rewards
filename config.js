@@ -26,7 +26,7 @@ export const Config = {
     guruBotToken: process.env.GURU_BOT_TOKEN || "",
 
     // AI settings
-    googleAiApiKey: process.env.GOOGLE_AI_API_KEY || "",
+    groqApiKey: process.env.GROQ_API_KEY || "",
 
     // Indexer settings
     indexerIntervalMin: Number(process.env.INDEXER_INTERVAL_MIN) || 30,

@@ -1,5 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import fs from 'fs';
 import path from 'path';
 import { Config } from '../config.js';
@@ -40,6 +40,76 @@ function escapeHtml(text) {
     return text.replace(/&/g, '&amp;')
                .replace(/</g, '&lt;')
                .replace(/>/g, '&gt;');
+}
+
+// Transient network errors are expected during long-polling and get retried
+// automatically by node-telegram-bot-api. Collapse repeats into a single
+// summary line instead of logging every occurrence.
+function makePollingErrorLogger() {
+    let lastCode = null;
+    let repeatCount = 0;
+
+    return (error) => {
+        const code = error.code || 'UNKNOWN';
+        if (code === lastCode) {
+            repeatCount++;
+            return;
+        }
+        if (lastCode !== null && repeatCount > 0) {
+            console.error(`[polling_error] ${lastCode} repeated ${repeatCount} more time(s)`);
+        }
+        lastCode = code;
+        repeatCount = 0;
+        console.error(`[polling_error] ${code}: ${error.message}`);
+    };
+}
+
+// Extracts the server-suggested retry delay (seconds) from a Groq 429
+// response's Retry-After header, if present.
+function getRetryDelaySeconds(error) {
+    const retryAfter = error?.headers?.get?.('retry-after');
+    const parsed = parseFloat(retryAfter);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+// Calls a Groq chat.sendMessage-style function, retrying once on 429s
+// using the server's suggested retry delay (capped to avoid blocking too long).
+async function withGroqRetry(fn, { maxRetries = 1, maxDelayMs = 10000 } = {}) {
+    let attempt = 0;
+    for (;;) {
+        try {
+            return await fn();
+        } catch (error) {
+            const isRateLimited = error?.status === 429;
+            if (!isRateLimited || attempt >= maxRetries) {
+                throw error;
+            }
+            const delaySeconds = getRetryDelaySeconds(error);
+            const delayMs = Math.min((delaySeconds ?? 1) * 1000, maxDelayMs);
+            attempt++;
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+    }
+}
+
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
+// Minimal chat-session wrapper around Groq's stateless chat completions API,
+// mirroring the sendMessage({message}) -> {text} shape the rest of this file uses.
+function createChat(groq, systemInstruction) {
+    const history = systemInstruction ? [{ role: 'system', content: systemInstruction }] : [];
+    return {
+        sendMessage: async ({ message }) => {
+            history.push({ role: 'user', content: message });
+            const completion = await withGroqRetry(() => groq.chat.completions.create({
+                model: GROQ_MODEL,
+                messages: history,
+            }));
+            const text = completion.choices[0]?.message?.content ?? '';
+            history.push({ role: 'assistant', content: text });
+            return { text };
+        },
+    };
 }
 
 async function handleMessage(msg, ctx) {
@@ -238,7 +308,7 @@ async function handleNewChatMembers(msg, ctx) {
 }
 
 async function main() {
-    const ai = new GoogleGenAI({ apiKey: Config.googleAiApiKey });
+    const groq = new Groq({ apiKey: Config.groqApiKey });
 
     const loadSystemInstruction = () => {
         return fs.readFileSync('system_instruction.txt', 'utf-8') + loadDocs();
@@ -266,37 +336,19 @@ async function main() {
         generatePersonalizedGreeting: null,
     };
 
-    ctx.chat = ai.chats.create({
-        model: "gemini-2.0-flash",
-        config: {
-            systemInstruction: systemInstruction,
-        },
-        history: [],
-    });
+    ctx.chat = createChat(groq, systemInstruction);
 
     ctx.resetChat = (newInstruction = null) => {
         if (newInstruction) {
             systemInstruction = newInstruction;
         }
-        ctx.chat = ai.chats.create({
-            model: "gemini-2.0-flash",
-            config: {
-                systemInstruction: systemInstruction,
-            },
-            history: [],
-        });
+        ctx.chat = createChat(groq, systemInstruction);
         console.log('Chat history reset.');
     };
 
     ctx.shouldRespondToMessage = async (messageText, isInAttentionMode = false) => {
         try {
-            const checkChat = ai.chats.create({
-                model: "gemini-2.0-flash",
-                config: {
-                    systemInstruction: "You analyze messages to determine if they are questions or comments that need a response from an AI assistant in a crypto community chat. Respond with only 'YES' or 'NO'.",
-                },
-                history: [],
-            });
+            const checkChat = createChat(groq, "You analyze messages to determine if they are questions or comments that need a response from an AI assistant in a crypto community chat. Respond with only 'YES' or 'NO'.");
 
             let prompt;
             if (isInAttentionMode) {
@@ -327,13 +379,7 @@ Reply with only YES or NO.`;
         try {
             const prompt = `Write a short, warm message (2-3 sentences) for someone joining a crypto token community. Be friendly and use simple nature metaphors. No semicolons. Don't mention the user's name. Don't start with "Welcome" or "Greetings". Sound human, not like AI. Plain text only. End with letting them know they can mention you in the chat if they have any questions about the project - phrase this differently each time (e.g. "just tag me", "mention me anytime", "ping me if you need help", etc).`;
 
-            const welcomeChat = ai.chats.create({
-                model: "gemini-2.0-flash",
-                config: {
-                    systemInstruction: "You write short, friendly messages with simple metaphors. Sound natural and human. Never use semicolons. Plain text only, no markdown.",
-                },
-                history: [],
-            });
+            const welcomeChat = createChat(groq, "You write short, friendly messages with simple metaphors. Sound natural and human. Never use semicolons. Plain text only, no markdown.");
 
             const response = await welcomeChat.sendMessage({ message: prompt });
             return response.text;
@@ -342,6 +388,8 @@ Reply with only YES or NO.`;
             return `May your journey here be rewarding. Great things await. Tag me anytime if you have questions!`;
         }
     };
+
+    ctx.bot.on('polling_error', makePollingErrorLogger());
 
     ctx.bot.on('message', (msg) => handleMessage(msg, ctx));
     ctx.bot.on('new_chat_members', (msg) => handleNewChatMembers(msg, ctx));
