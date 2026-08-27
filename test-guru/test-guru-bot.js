@@ -92,7 +92,7 @@ async function withGroqRetry(fn, { maxRetries = 1, maxDelayMs = 10000 } = {}) {
     }
 }
 
-const GROQ_MODEL = 'openai/gpt-oss-120b';
+const GROQ_MODEL = 'groq/compound';
 
 // Minimal chat-session wrapper around Groq's stateless chat completions API,
 // mirroring the sendMessage({message}) -> {text} shape the rest of this file uses.
