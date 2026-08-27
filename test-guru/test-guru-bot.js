@@ -7,16 +7,72 @@ import { Config } from '../config.js';
 const chatId = Number(Config.telegramChatId);
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
+const STOPWORDS = new Set(`
+a about above after again against all am an and any are aren't as at be because
+been before being below between both but by can't cannot could couldn't did
+didn't do does doesn't doing don't down during each few for from further had
+hadn't has hasn't have haven't having he he'd he'll he's her here here's hers
+herself him himself his how how's i i'd i'll i'm i've if in into is isn't it
+it's its itself let's me more most mustn't my myself no nor not of off on once
+only or other ought our ours ourselves out over own same shan't she she'd
+she'll she's should shouldn't so some such than that that's the their theirs
+them themselves then there there's these they they'd they'll they're they've
+this those through to too under until up very was wasn't we we'd we'll we're
+we've were weren't what what's when when's where where's which while who
+who's whom why why's with won't would wouldn't you you'd you'll you're you've
+your yours yourself yourselves just like still random tell about does someone
+question anyone anything something please thanks thank hey hi hello there
+`.split(/\s+/).filter(Boolean));
+
+// Loads each doc as a separate { name, content } entry instead of one giant
+// blob, so only the docs relevant to a given message get sent to the model.
 function loadDocs() {
     const docsDir = path.join(process.cwd(), '..', 'docs');
-    const files = fs.readdirSync(docsDir).filter(f => f.endsWith('.md'));
+    const files = fs.readdirSync(docsDir).filter(f => f.endsWith('.md') && f !== 'SUMMARY.md');
 
-    let docs = '';
-    for (const file of files) {
-        const content = fs.readFileSync(path.join(docsDir, file), 'utf-8');
-        docs += `\n## ${file.replace('.md', '')}\n${content}\n`;
+    return files.map(file => ({
+        name: file.replace('.md', ''),
+        content: fs.readFileSync(path.join(docsDir, file), 'utf-8'),
+    }));
+}
+
+// Picks the docs whose content best matches the keywords in a message, so we
+// only spend tokens on documentation actually relevant to the question
+// (the free Groq tier has an 8K token-per-request budget for plain chat models).
+// Keyword matches are weighted inverse to how many docs they appear in, so
+// common words shared across most docs don't drown out topic-specific ones.
+function pickRelevantDocs(messageText, docs, { maxDocs = 2, minScore = 1.5 } = {}) {
+    const keywords = (messageText.toLowerCase().match(/[a-z0-9']{3,}/g) || [])
+        .filter(word => !STOPWORDS.has(word));
+    if (keywords.length === 0) return [];
+
+    const docFrequency = new Map();
+    for (const word of new Set(keywords)) {
+        const count = docs.filter(doc => new RegExp(`\\b${word}\\b`, 'i').test(doc.name + ' ' + doc.content)).length;
+        docFrequency.set(word, count);
     }
-    return docs;
+
+    const scored = docs.map(doc => {
+        const haystack = doc.name + ' ' + doc.content;
+        const score = keywords.reduce((sum, word) => {
+            const matches = (haystack.match(new RegExp(`\\b${word}\\b`, 'gi')) || []).length;
+            if (matches === 0) return sum;
+            const weight = 1 / (docFrequency.get(word) || 1);
+            return sum + matches * weight;
+        }, 0);
+        return { doc, score };
+    });
+
+    return scored
+        .filter(({ score }) => score >= minScore)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, maxDocs)
+        .map(({ doc }) => doc);
+}
+
+function formatDocsForPrompt(docs) {
+    if (docs.length === 0) return '';
+    return docs.map(doc => `\n## ${doc.name}\n${doc.content}\n`).join('\n');
 }
 
 function loadWelcomeTemplate() {
@@ -92,7 +148,7 @@ async function withGroqRetry(fn, { maxRetries = 1, maxDelayMs = 10000 } = {}) {
     }
 }
 
-const GROQ_MODEL = 'groq/compound';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 
 // Minimal chat-session wrapper around Groq's stateless chat completions API,
 // mirroring the sendMessage({message}) -> {text} shape the rest of this file uses.
@@ -132,6 +188,7 @@ async function handleMessage(msg, ctx) {
                 return; // Silently ignore non-admins
             }
             const newInstruction = ctx.loadSystemInstruction();
+            ctx.docs = loadDocs();
             ctx.welcomeTemplate = loadWelcomeTemplate();
             ctx.resetChat(newInstruction);
             console.log('Documentation and welcome template refreshed.');
@@ -176,8 +233,16 @@ async function handleMessage(msg, ctx) {
     if (shouldRespond && msg.text) {
         console.log('Responding to message from', userDisplayName);
 
+        // Only pull in the documentation relevant to this message, so each
+        // request stays well under the free-tier token budget instead of
+        // sending all docs on every turn.
+        const relevantDocs = pickRelevantDocs(msg.text, ctx.docs);
+        const docsContext = relevantDocs.length > 0
+            ? `[Reference documentation for this question]\n${formatDocsForPrompt(relevantDocs)}\n`
+            : '';
+
         // Build message with user context
-        let messageToSend = `[Message from user "${userDisplayName}"]\n\n`;
+        let messageToSend = docsContext + `[Message from user "${userDisplayName}"]\n\n`;
 
         if (msg.quote?.text) {
             // User quoted a specific portion of the bot's message
@@ -310,9 +375,7 @@ async function handleNewChatMembers(msg, ctx) {
 async function main() {
     const groq = new Groq({ apiKey: Config.groqApiKey });
 
-    const loadSystemInstruction = () => {
-        return fs.readFileSync('system_instruction.txt', 'utf-8') + loadDocs();
-    };
+    const loadSystemInstruction = () => fs.readFileSync('system_instruction.txt', 'utf-8');
 
     let systemInstruction = loadSystemInstruction();
 
@@ -325,6 +388,7 @@ async function main() {
             }
         }),
         chat: null,
+        docs: loadDocs(),
         welcomeTemplate: loadWelcomeTemplate(),
         welcomeAnimationFileId: null,
         inactivityTimer: null,
