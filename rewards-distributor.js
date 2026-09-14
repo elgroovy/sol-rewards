@@ -605,6 +605,18 @@ async function distributeRewards() {
                 return;
             }
 
+            // Below this the payout is not worth making: the jackpot and treasury
+            // transfers cost a fixed fee each, every holder share lands under
+            // kSolMinLimit and just grows the pending table, and nobody actually
+            // gets paid. Leave the SOL to accumulate into a real distribution.
+            if (accountBalance < Constants.kMinSolToDistribute * LAMPORTS_PER_SOL) {
+                console.log(`Only ${accountBalance / LAMPORTS_PER_SOL} SOL distributable, below the ${Constants.kMinSolToDistribute} SOL minimum - letting it accumulate`);
+                // Still pay out pending rewards: those are already owed and may have
+                // accumulated enough to send, independently of this cycle being small.
+                await distributeAcumulatedPendingRewards(connection);
+                return;
+            }
+
             // Divide the remaining accountBalance between the jackpot, treasury, and holders
             const jackpotLamports = Math.floor(accountBalance * (Constants.kLotteryPercent / 100));
             const treasuryLamports = Math.floor(accountBalance * (Constants.kTreasuryPercent / 100));
