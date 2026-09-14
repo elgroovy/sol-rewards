@@ -36,6 +36,7 @@ export const Constants = {
     
     // Buyback settings
     kBuybackSolToReserve: 0.01,     // 0.01 SOL to reserve for fees
+    kBuybackMinSol: 0.01,           // Skip the buyback unless at least this much is available for each half (buy + LP pair)
     kBuybackTokenAccount: "9RQPZTRMcaskfFUgvW71aFBsxxX1zovAMJSZbev9jYFZ",
 
     // Jackpot settings

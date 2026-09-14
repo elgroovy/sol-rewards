@@ -67,9 +67,9 @@ async function runBuyback() {
 
         console.log(`Buyback wallet balance: ${balanceLamports / LAMPORTS_PER_SOL} SOL`);
 
-        if (halfLamports < LAMPORTS_PER_SOL * 0.01)
+        if (halfLamports < Constants.kBuybackMinSol * LAMPORTS_PER_SOL)
         {
-            console.log("Insufficient SOL for buyback. Skipping...");
+            console.log(`Insufficient SOL for buyback: ${halfLamports / LAMPORTS_PER_SOL} SOL available per half, below the ${Constants.kBuybackMinSol} SOL minimum. Skipping...`);
             return;
         }
 
