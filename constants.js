@@ -30,7 +30,7 @@ export const Constants = {
     kLotteryPercent : 30,           // 3% of the rewards go to the jackpot
     kTreasuryPercent : 20,          // 2% for treasury and the rest (5%) for holders
     kBurnPercent : 0,               // Burns are disabled for now
-    kSolToReserve: 0.1,             // 0.1 SOL to reserve for fees
+    kSolToReserve: 0.01,            // 0.01 SOL to reserve for fees (~125x a full cycle's ~0.00008 SOL of tx fees)
     kSolMinLimit : 0.00005,         // 0.00005 SOL is the minimum we can send to a holder, to save on TX fees
     kBatchSize : 10,                // Number of holders to send rewards to in one batch
     
