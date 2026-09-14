@@ -21,8 +21,8 @@ import { loadKeypairFromFile } from "./keypair-utils.js";
 import { swapToken } from './jupiter-swap.js';
 import { Constants } from './constants.js';
 import { Config } from './config.js';
+import { notifyBackend } from './notify-backend.js';
 import { collectFees } from './fee-collector.js';
-import fetch from 'node-fetch';
 import * as db from './db.js';
 
 
@@ -415,24 +415,7 @@ async function distributeAcumulatedPendingRewards(connection) {
 
 async function notifyTelegramBot(notificationPayload)
 {
-    try {
-        const response = await fetch(Config.backendUrl + "/rewards/notify", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-API-Key": Config.adminApiKey
-            },
-            body: JSON.stringify(notificationPayload)
-        });
-
-        if (!response.ok) {
-            console.error(`Failed to send notification. Status: ${response.status}, Message: ${await response.text()}`);
-        } else {
-            console.log("Notification sent successfully.");
-        }
-    } catch (error) {
-        console.error("Error sending notification:", error);
-    }
+    return notifyBackend(notificationPayload);
 }
 
 /**

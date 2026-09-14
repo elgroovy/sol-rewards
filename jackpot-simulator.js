@@ -20,6 +20,7 @@ import { swapToken } from './jupiter-swap.js';
 import { loadKeypairFromFile } from "./keypair-utils.js";
 import { Constants } from './constants.js';
 import { Config } from './config.js';
+import { notifyBackend } from './notify-backend.js';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import WebSocket from 'ws';
@@ -112,24 +113,7 @@ async function sendEarnedSolToWallets(walletsToSendTo)
 
 async function notifyTelegramBot(notificationPayload)
 {
-    try {
-        const response = await fetch(Config.backendUrl + "/jackpots/notify", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-API-Key": Config.adminApiKey
-            },
-            body: JSON.stringify(notificationPayload)
-        });
-
-        if (!response.ok) {
-            console.error(`Failed to send notification. Status: ${response.status}, Message: ${await response.text()}`);
-        } else {
-            console.log("Notification sent successfully.");
-        }
-    } catch (error) {
-        console.error("Error sending notification:", error);
-    }
+    return notifyBackend(notificationPayload, "/jackpots/notify");
 }
 
 async function sendCommand(commmand)

@@ -18,31 +18,14 @@ import { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import BN from "bn.js";
 import { Constants } from "./constants.js";
 import { Config } from './config.js';
-import fetch from 'node-fetch';
+import { notifyBackend } from './notify-backend.js';
 
 // Set to true to simulate buyback (sends fake notification)
 const SIMULATION_MODE = false;
 
 async function notifyTelegramBot(notificationPayload)
 {
-    try {
-        const response = await fetch(Config.backendUrl + "/rewards/notify", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-API-Key": Config.adminApiKey
-            },
-            body: JSON.stringify(notificationPayload)
-        });
-
-        if (!response.ok) {
-            console.error(`Failed to send notification. Status: ${response.status}, Message: ${await response.text()}`);
-        } else {
-            console.log("Notification sent successfully.");
-        }
-    } catch (error) {
-        console.error("Error sending notification:", error);
-    }
+    return notifyBackend(notificationPayload);
 }
 
 async function sendBuybackNotification(solUsed, trtBought, trtInjected, solPaired, txSignature)
