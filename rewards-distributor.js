@@ -29,6 +29,9 @@ import * as db from './db.js';
 let ownerKeypair = null;
 let isRunning = false; // flag to track if reward distribution is running
 
+// Headroom above the reserve so a batch cannot land the wallet exactly on empty.
+const kFeeBufferLamports = 20000;
+
 
 async function getRewardTokenBalance(connection) {
     // Determine the token program ID for the reward token mint
@@ -96,6 +99,14 @@ async function getDistributablePendingRewards(minLamports) {
         [minLamports]
     );
     return rows;
+}
+
+async function getTotalPendingLamports() {
+    const [rows] = await db.query(
+        'SELECT COALESCE(SUM(amount_lamports), 0) AS total FROM pending_rewards'
+    );
+    // mysql2 returns SUM as a string when supportBigNumbers is on.
+    return Number(rows[0]?.total ?? 0);
 }
 
 async function clearDistributedPendingRewards(wallets) {
@@ -364,6 +375,7 @@ async function distributeAcumulatedPendingRewards(connection) {
 
         const pendingInstructions = [];
         const pendingWalletsData = [];
+        const pendingLamports = [];
         const distributedWallets = [];
 
         for (const pending of distributablePending) {
@@ -390,26 +402,54 @@ async function distributeAcumulatedPendingRewards(connection) {
                 tokenSymbol: "SOL"
             });
 
+            pendingLamports.push(Number(pending.amount_lamports));
             distributedWallets.push(pending.wallet);
         }
 
-        // Send pending rewards in batches
+        // Send pending rewards in batches.
+        // Each batch is cleared from the database as soon as it confirms: clearing
+        // all of them only at the end means a batch that throws part-way leaves the
+        // already-paid wallets in the table, and they get paid again next cycle.
+        let clearedCount = 0;
+
         for (let i = 0; i < pendingInstructions.length; i += Constants.kBatchSize) {
-            const transaction = new Transaction().add(...pendingInstructions.slice(i, i + Constants.kBatchSize));
+            const batchInstructions = pendingInstructions.slice(i, i + Constants.kBatchSize);
+            const batchWallets = distributedWallets.slice(i, i + Constants.kBatchSize);
+            const batchWalletsData = pendingWalletsData.slice(i, i + Constants.kBatchSize);
+            const batchLamports = pendingLamports.slice(i, i + Constants.kBatchSize).reduce((sum, n) => sum + n, 0);
+
+            // This path pays what the database says is owed, so it has to check the
+            // wallet can actually cover it. Stopping here leaves the rest in the
+            // table to be paid by a later cycle.
+            const balance = await connection.getBalance(ownerKeypair.publicKey);
+            const needed = batchLamports + Constants.kSolToReserve * LAMPORTS_PER_SOL + kFeeBufferLamports;
+            if (balance < needed) {
+                console.error(`Stopping pending payout: need ${needed / LAMPORTS_PER_SOL} SOL (incl. reserve), wallet has ${balance / LAMPORTS_PER_SOL} SOL. ${pendingInstructions.length - i} wallet(s) left in the table for a later cycle.`);
+                break;
+            }
+
+            const transaction = new Transaction().add(...batchInstructions);
             const signature = await sendAndConfirmTransaction(connection, transaction, [ownerKeypair]);
             const txUrl = `https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`;
             console.log(`Pending rewards batch sent: ${txUrl}`);
 
+            // Clear before notifying: the notification retries for ~37s and must not
+            // sit between a confirmed payment and the database catching up.
+            try {
+                await clearDistributedPendingRewards(batchWallets);
+                clearedCount += batchWallets.length;
+            } catch (error) {
+                console.error(`PAID BUT NOT CLEARED: ${batchWallets.length} wallet(s) in ${signature} are still in pending_rewards and will be paid again. Remove them manually: ${batchWallets.join(", ")}`, error);
+            }
+
             await notifyTelegramBot({
                 messageType: "rewards",
-                wallets: pendingWalletsData.slice(i, i + Constants.kBatchSize),
+                wallets: batchWalletsData,
                 transactionUrl: txUrl
             });
         }
 
-        // Clear distributed pending rewards from database
-        await clearDistributedPendingRewards(distributedWallets);
-        console.log(`Cleared ${distributedWallets.length} distributed pending rewards from database`);
+        console.log(`Cleared ${clearedCount} distributed pending rewards from database`);
     }
 }
 
@@ -517,6 +557,22 @@ async function distributeRewards() {
 
             // Always reserve some SOL for fees
             accountBalance -= Constants.kSolToReserve * LAMPORTS_PER_SOL;
+
+            // Pending rewards are already promised to specific holders, but the SOL
+            // backing them is still sitting in this wallet. Without excluding it here
+            // it gets re-split every cycle - partly to the jackpot and treasury - so
+            // the database ends up owing more than the wallet can pay.
+            const pendingOwedLamports = await getTotalPendingLamports();
+            if (pendingOwedLamports > 0) {
+                console.log(`Holding back ${pendingOwedLamports / LAMPORTS_PER_SOL} SOL already owed as pending rewards`);
+                accountBalance -= pendingOwedLamports;
+            }
+
+            if (accountBalance <= 0) {
+                console.log("Nothing new to distribute - the remaining balance is owed to pending rewards. Paying those out only.");
+                await distributeAcumulatedPendingRewards(connection);
+                return;
+            }
 
             // Divide the remaining accountBalance between the jackpot, treasury, and holders
             const jackpotLamports = Math.floor(accountBalance * (Constants.kLotteryPercent / 100));
