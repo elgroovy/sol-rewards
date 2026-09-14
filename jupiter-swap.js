@@ -2,7 +2,11 @@
 import { VersionedTransaction } from "@solana/web3.js";
 import axios from 'axios';
 
-const JUPITER_API_KEY = '97a7a2bc-a8fb-453e-9b17-68a2f61c631f';
+// A key is only valid on api.jup.ag (paid plan). Without one we use the free
+// lite-api host, which rejects the x-api-key header.
+const JUPITER_API_KEY = process.env.JUPITER_API_KEY || '';
+const JUPITER_API_HOST = JUPITER_API_KEY ? 'https://api.jup.ag' : 'https://lite-api.jup.ag';
+const jupiterHeaders = JUPITER_API_KEY ? { 'x-api-key': JUPITER_API_KEY } : {};
 
 /**
  * Swaps tokens using the Jupiter API.
@@ -17,16 +21,14 @@ const JUPITER_API_KEY = '97a7a2bc-a8fb-453e-9b17-68a2f61c631f';
  */
 export async function swapToken(connection, keypair, inputMint, inputAmmount, outputMint, takerWallet) {
     try {
-        const orderResponse = await axios.get('https://api.jup.ag/ultra/v1/order', {
+        const orderResponse = await axios.get(`${JUPITER_API_HOST}/ultra/v1/order`, {
         params: {
             inputMint: inputMint,
             outputMint: outputMint,
             amount: inputAmmount,
             taker: takerWallet
         },
-        headers: {
-            'x-api-key': JUPITER_API_KEY
-        }
+        headers: jupiterHeaders
         });
         //console.log({ orderResponse: orderResponse.data });
 
@@ -37,11 +39,11 @@ export async function swapToken(connection, keypair, inputMint, inputAmmount, ou
         const signedTransaction = Buffer.from(transaction.serialize()).toString('base64');
 
         const executeResponse = await (
-            await fetch('https://api.jup.ag/ultra/v1/execute', {
+            await fetch(`${JUPITER_API_HOST}/ultra/v1/execute`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': JUPITER_API_KEY,
+                    ...jupiterHeaders,
                 },
                 body: JSON.stringify({
                     signedTransaction: signedTransaction,
