@@ -215,8 +215,14 @@ async function distributeToHolders(connection, totalLamportsToSend) {
     // Fetch the total supply from the mint account for sqrt-based distribution
     const mintAccount = await getMint(connection, new PublicKey(Constants.kTokenMintPubkey), "confirmed", TOKEN_2022_PROGRAM_ID);
     const totalSupply = Number(mintAccount.supply);
-    const sqrtTotalSupply = Math.sqrt(totalSupply);
-    console.log(`Total supply: ${totalSupply / Math.pow(10, Constants.kTokenDecimals)}, sqrt: ${sqrtTotalSupply.toFixed(2)}`);
+    console.log(`Total supply: ${totalSupply / Math.pow(10, Constants.kTokenDecimals)}`);
+
+    // Normalise against the sum of the eligible holders' weights, NOT sqrt(totalSupply).
+    // sqrt is concave, so the sum of the individual roots far exceeds the root of the
+    // sum: dividing by sqrt(totalSupply) makes the shares add up to well over 100% of
+    // the budget and drains the wallet part-way through the batches.
+    const sumSqrtWeights = eligibleHolders.reduce((sum, h) => sum + h.sqrtWeight, 0);
+    let allocatedLamports = 0n;
 
     // Second pass: calculate shares and create transfer instructions
     for (const holder of eligibleHolders) {
@@ -236,7 +242,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             );
 
             // Square root weighted share for token distribution
-            const shareRatio = sqrtWeight / sqrtTotalSupply;
+            const shareRatio = sumSqrtWeights > 0 ? sqrtWeight / sumSqrtWeights : 0;
             const holderTokenShare = BigInt(Math.floor(shareRatio * Number(rewardTokenBalance.balance)));
 
             // Transfer reward tokens
@@ -260,7 +266,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             });
         } else {
             // Square root weighted share for SOL distribution
-            const shareRatio = sqrtWeight / sqrtTotalSupply;
+            const shareRatio = sumSqrtWeights > 0 ? sqrtWeight / sumSqrtWeights : 0;
             const holderShare = BigInt(Math.floor(shareRatio * totalLamportsToSend));
 
             // If SOL amount is too small, add to pending rewards instead of skipping
@@ -283,6 +289,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             }
 
             // Transfer SOL
+            allocatedLamports += holderShare;
             instructions.push(
                 SystemProgram.transfer({
                     fromPubkey: ownerKeypair.publicKey,
@@ -301,6 +308,13 @@ async function distributeToHolders(connection, totalLamportsToSend) {
 
     console.log(`Filtered: ${skippedPDA} PDAs, ${skippedManual} manual exclusions, ${skippedBalance} below threshold balance, ${skippedMinShare} added to pending`);
     console.log(`Eligible holders: ${instructions.length}`);
+
+    // Never pay out more than the budget: a mis-normalised share would otherwise
+    // drain the fee reserve mid-batch and leave later holders unpaid.
+    if (allocatedLamports > BigInt(Math.floor(totalLamportsToSend))) {
+        console.error(`Refusing to distribute: allocated ${Number(allocatedLamports) / LAMPORTS_PER_SOL} SOL exceeds the ${totalLamportsToSend / LAMPORTS_PER_SOL} SOL budget`);
+        return;
+    }
 
     let transactionUrl = "";
 
