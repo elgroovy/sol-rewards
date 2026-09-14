@@ -480,42 +480,50 @@ async function distributeRewards() {
         // Check if we have enough tokens to distribute
         const tokenAmount = await connection.getTokenAccountBalance(tokenAccount.address);
         const tokenBalance = tokenAmount.value.amount;
-        if (tokenBalance < BigInt(Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals)) {
-            console.log("Not enough tokens to distribute rewards");
-            return;
+        const hasEnoughTokens = tokenBalance >= BigInt(Constants.kTokensToAccumulate * 10 ** tokenAmount.value.decimals);
+
+        // Not having enough tokens only means there is nothing new to sell. Any SOL
+        // banked by an earlier cycle that swapped but could not pay out is still
+        // distributable, so fall through to the SOL stage instead of returning.
+        let swapSucceeded = false;
+        if (!hasEnoughTokens) {
+            console.log("Not enough tokens to swap - checking for SOL already in the wallet...");
+        } else {
+
+            // Calculate the amount of tokens to burn
+            let burnAmount = 0;
+            if (Constants.kBurnPercent !== 0) {
+                burnAmount = Math.floor(tokenBalance * (Constants.kBurnPercent / 100));
+                const tokensToBurn = burnAmount / Math.pow(10, tokenAmount.value.decimals);
+                console.log(`Burning ${tokensToBurn} tokens (${Constants.kBurnPercent}%)...`);
+
+                // Build and send the Burn transaction
+                const signature = await burnChecked(
+                    connection,
+                    ownerKeypair,
+                    tokenAccount.address,
+                    mint,
+                    ownerKeypair.publicKey,
+                    burnAmount,
+                    tokenAmount.value.decimals,
+                    undefined,
+                    undefined,
+                    TOKEN_2022_PROGRAM_ID,
+                );
+                console.log(`✓ Burn completed. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
+            }
+
+            // Swap remaining tokens for SOL (or the reward token if it's set)
+            const remainingTokenAmount = tokenBalance - burnAmount;
+            const tokensToSwap = remainingTokenAmount / Math.pow(10, tokenAmount.value.decimals)
+            console.log(`Swapping ${tokensToSwap} tokens for SOL...`);
+            const swapResult = await swapToken(connection, ownerKeypair, Constants.kTokenMintPubkey, remainingTokenAmount, Constants.kWSOLMint, Constants.kFeeRecipientWalletPubkey);  
+            swapSucceeded = swapResult.success;
         }
 
-        // Calculate the amount of tokens to burn
-        let burnAmount = 0;
-        if (Constants.kBurnPercent !== 0) {
-            burnAmount = Math.floor(tokenBalance * (Constants.kBurnPercent / 100));
-            const tokensToBurn = burnAmount / Math.pow(10, tokenAmount.value.decimals);
-            console.log(`Burning ${tokensToBurn} tokens (${Constants.kBurnPercent}%)...`);
-
-            // Build and send the Burn transaction
-            const signature = await burnChecked(
-                connection,
-                ownerKeypair,
-                tokenAccount.address,
-                mint,
-                ownerKeypair.publicKey,
-                burnAmount,
-                tokenAmount.value.decimals,
-                undefined,
-                undefined,
-                TOKEN_2022_PROGRAM_ID,
-            );
-            console.log(`✓ Burn completed. Signature: https://solscan.io/tx/${signature}?cluster=${Constants.kSolanaNetwork}`);
-        }
-
-        // Swap remaining tokens for SOL (or the reward token if it's set)
-        const remainingTokenAmount = tokenBalance - burnAmount;
-        const tokensToSwap = remainingTokenAmount / Math.pow(10, tokenAmount.value.decimals)
-        console.log(`Swapping ${tokensToSwap} tokens for SOL...`);
-        const swapResult = await swapToken(connection, ownerKeypair, Constants.kTokenMintPubkey, remainingTokenAmount, Constants.kWSOLMint, Constants.kFeeRecipientWalletPubkey);  
-
-        // Finally, divide the SOL among the holders and treasury wallet
-        if (swapResult.success) {
+        // Finally, divide the SOL among the holders and treasury wallet.
+        // A failed swap still skips this, so we never pay out on a broken cycle.
+        if (swapSucceeded || !hasEnoughTokens) {
 
             // Get current SOL balance
             let accountBalance = await connection.getBalance(ownerKeypair.publicKey);
