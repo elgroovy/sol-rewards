@@ -32,6 +32,12 @@ let isRunning = false; // flag to track if reward distribution is running
 // Headroom above the reserve so a batch cannot land the wallet exactly on empty.
 const kFeeBufferLamports = 20000;
 
+// Collapses a list of addresses into one short log line. These run every cycle,
+// so logging them one per line buries everything else.
+function summariseAddresses(addresses) {
+    return addresses.map(a => a.slice(0, 8)).join(", ");
+}
+
 
 async function getRewardTokenBalance(connection) {
     // Determine the token program ID for the reward token mint
@@ -199,6 +205,8 @@ async function distributeToHolders(connection, totalLamportsToSend) {
     let skippedBalance = 0;
     let skippedMinShare = 0;
     let skippedUnreachable = 0;
+    const skippedPDAAddresses = [];
+    const skippedUnreachableAddresses = [];
 
     const instructions = [];
     const walletsData = [];
@@ -224,7 +232,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
 
         // Skip PDAs (off-curve addresses, like pool vaults, program accounts etc.)
         if (!PublicKey.isOnCurve(account.owner.toBytes())) {
-            console.log(`Skipping ${ownerAddress} - off-curve (likely a pool/PDA)`);
+            skippedPDAAddresses.push(ownerAddress);
             skippedPDA++;
             continue;
         }
@@ -312,7 +320,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             const recipientBalance = balanceMap.get(ownerAddress) || 0;
             const isUnreachable = recipientBalance === 0;
             if (isUnreachable) {
-                console.log(`Skipping ${ownerAddress} - no SOL balance (reward accrued to pending)`);
+                skippedUnreachableAddresses.push(ownerAddress);
                 skippedUnreachable++;
             }
 
@@ -344,6 +352,13 @@ async function distributeToHolders(connection, totalLamportsToSend) {
                 tokenSymbol: "SOL"
             });
         }
+    }
+
+    if (skippedPDAAddresses.length > 0) {
+        console.log(`Skipped ${skippedPDAAddresses.length} off-curve account(s) (pools/PDAs): ${summariseAddresses(skippedPDAAddresses)}`);
+    }
+    if (skippedUnreachableAddresses.length > 0) {
+        console.log(`Accrued rewards for ${skippedUnreachableAddresses.length} wallet(s) with no SOL balance: ${summariseAddresses(skippedUnreachableAddresses)}`);
     }
 
     console.log(`Filtered: ${skippedPDA} PDAs, ${skippedManual} manual exclusions, ${skippedBalance} below threshold balance, ${skippedMinShare} added to pending, ${skippedUnreachable} accrued for wallets with no SOL`);
@@ -406,6 +421,7 @@ async function distributeAcumulatedPendingRewards(connection) {
         const pendingWalletsData = [];
         const pendingLamports = [];
         const distributedWallets = [];
+        const skippedPendingAddresses = [];
 
         // One batched lookup instead of a getBalance per wallet: the per-wallet loop
         // rate-limited the RPC once the table grew past a few dozen entries.
@@ -417,7 +433,7 @@ async function distributeAcumulatedPendingRewards(connection) {
             // Check SOL balance
             const recipientBalance = pendingBalances.get(pending.wallet) || 0;
             if (recipientBalance === 0) {
-                console.log(`Skipping pending for ${pending.wallet} - no SOL balance`);
+                skippedPendingAddresses.push(pending.wallet);
                 continue;
             }
 
@@ -437,6 +453,10 @@ async function distributeAcumulatedPendingRewards(connection) {
 
             pendingLamports.push(Number(pending.amount_lamports));
             distributedWallets.push(pending.wallet);
+        }
+
+        if (skippedPendingAddresses.length > 0) {
+            console.log(`Skipping ${skippedPendingAddresses.length} pending wallet(s) with no SOL balance: ${summariseAddresses(skippedPendingAddresses)}`);
         }
 
         // Send pending rewards in batches.
