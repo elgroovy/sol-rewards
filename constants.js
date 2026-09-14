@@ -24,7 +24,6 @@ export const Constants = {
     kTokenDecimals: 6,
 
     // Reward distribution settings
-    kMinWithheldBalance : 0.1,      // Minimum witheld balance to withdraw for rewards
     kTokensToAccumulate : 10000,    // Start distributing rewards when this amount of tokens is accumulated
     kRewardMinHolding : 100_000,    // 100,000 tokens for rewards eligibility
     kLotteryPercent : 30,           // 3% of the rewards go to the jackpot
