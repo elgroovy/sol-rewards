@@ -101,12 +101,36 @@ async function getDistributablePendingRewards(minLamports) {
     return rows;
 }
 
-async function getTotalPendingLamports() {
-    const [rows] = await db.query(
-        'SELECT COALESCE(SUM(amount_lamports), 0) AS total FROM pending_rewards'
-    );
-    // mysql2 returns SUM as a string when supportBigNumbers is on.
-    return Number(rows[0]?.total ?? 0);
+/**
+ * Splits the outstanding pending rewards into what can actually be paid and what
+ * cannot. A wallet holding no SOL is skipped at payout - transferring to it would
+ * have to create the account, which costs more than the reward - so holding its
+ * share back would lock that SOL away permanently. Only reachable amounts are
+ * withheld from distribution. Unreachable ones keep their claim in the database.
+ */
+async function getPendingRewardsBreakdown(connection) {
+    const [rows] = await db.query('SELECT wallet, amount_lamports FROM pending_rewards');
+    if (rows.length === 0) {
+        return { reachableLamports: 0, unreachableLamports: 0, unreachableCount: 0 };
+    }
+
+    const balanceMap = await getBalances(connection, rows.map(r => new PublicKey(r.wallet)));
+
+    let reachableLamports = 0;
+    let unreachableLamports = 0;
+    let unreachableCount = 0;
+
+    for (const row of rows) {
+        const amount = Number(row.amount_lamports);
+        if ((balanceMap.get(row.wallet) || 0) > 0) {
+            reachableLamports += amount;
+        } else {
+            unreachableLamports += amount;
+            unreachableCount++;
+        }
+    }
+
+    return { reachableLamports, unreachableLamports, unreachableCount };
 }
 
 async function clearDistributedPendingRewards(wallets) {
@@ -378,11 +402,15 @@ async function distributeAcumulatedPendingRewards(connection) {
         const pendingLamports = [];
         const distributedWallets = [];
 
+        // One batched lookup instead of a getBalance per wallet: the per-wallet loop
+        // rate-limited the RPC once the table grew past a few dozen entries.
+        const pendingBalances = await getBalances(connection, distributablePending.map(p => new PublicKey(p.wallet)));
+
         for (const pending of distributablePending) {
             const recipientPubkey = new PublicKey(pending.wallet);
 
             // Check SOL balance
-            const recipientBalance = await connection.getBalance(recipientPubkey);
+            const recipientBalance = pendingBalances.get(pending.wallet) || 0;
             if (recipientBalance === 0) {
                 console.log(`Skipping pending for ${pending.wallet} - no SOL balance`);
                 continue;
@@ -562,10 +590,13 @@ async function distributeRewards() {
             // backing them is still sitting in this wallet. Without excluding it here
             // it gets re-split every cycle - partly to the jackpot and treasury - so
             // the database ends up owing more than the wallet can pay.
-            const pendingOwedLamports = await getTotalPendingLamports();
-            if (pendingOwedLamports > 0) {
-                console.log(`Holding back ${pendingOwedLamports / LAMPORTS_PER_SOL} SOL already owed as pending rewards`);
-                accountBalance -= pendingOwedLamports;
+            const pending = await getPendingRewardsBreakdown(connection);
+            if (pending.reachableLamports > 0) {
+                console.log(`Holding back ${pending.reachableLamports / LAMPORTS_PER_SOL} SOL already owed as pending rewards`);
+                accountBalance -= pending.reachableLamports;
+            }
+            if (pending.unreachableCount > 0) {
+                console.log(`Not holding back ${pending.unreachableLamports / LAMPORTS_PER_SOL} SOL owed to ${pending.unreachableCount} wallet(s) with no SOL balance - they keep their claim but cannot be paid until they hold some SOL`);
             }
 
             if (accountBalance <= 0) {
