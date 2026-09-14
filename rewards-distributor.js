@@ -198,6 +198,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
     let skippedManual = 0;
     let skippedBalance = 0;
     let skippedMinShare = 0;
+    let skippedUnreachable = 0;
 
     const instructions = [];
     const walletsData = [];
@@ -304,22 +305,26 @@ async function distributeToHolders(connection, totalLamportsToSend) {
             const shareRatio = sumSqrtWeights > 0 ? sqrtWeight / sumSqrtWeights : 0;
             const holderShare = BigInt(Math.floor(shareRatio * totalLamportsToSend));
 
-            // If SOL amount is too small, add to pending rewards instead of skipping
-            if (holderShare < BigInt(Constants.kSolMinLimit * LAMPORTS_PER_SOL)) {
+            // A wallet with no SOL cannot be paid: the transfer would have to create
+            // the account, which costs more than the reward. Bank the share instead of
+            // dropping it - checking this after the minimum meant small rewards were
+            // banked while larger ones were silently lost.
+            const recipientBalance = balanceMap.get(ownerAddress) || 0;
+            const isUnreachable = recipientBalance === 0;
+            if (isUnreachable) {
+                console.log(`Skipping ${ownerAddress} - no SOL balance (reward accrued to pending)`);
+                skippedUnreachable++;
+            }
+
+            // Too small to be worth a transaction fee, or not payable yet: accrue it.
+            if (isUnreachable || holderShare < BigInt(Constants.kSolMinLimit * LAMPORTS_PER_SOL)) {
                 if (holderShare > 0n) {
                     pendingRewards.push({
                         wallet: ownerAddress,
                         amount: Number(holderShare)
                     });
-                    skippedMinShare++;
+                    if (!isUnreachable) skippedMinShare++;
                 }
-                continue;
-            }
-
-            // Check if recipient has enough SOL to be rent-exempt
-            const recipientBalance = balanceMap.get(ownerAddress) || 0;
-            if (recipientBalance === 0) {
-                console.log(`Skipping ${ownerAddress} - no SOL balance`);
                 continue;
             }
 
@@ -341,7 +346,7 @@ async function distributeToHolders(connection, totalLamportsToSend) {
         }
     }
 
-    console.log(`Filtered: ${skippedPDA} PDAs, ${skippedManual} manual exclusions, ${skippedBalance} below threshold balance, ${skippedMinShare} added to pending`);
+    console.log(`Filtered: ${skippedPDA} PDAs, ${skippedManual} manual exclusions, ${skippedBalance} below threshold balance, ${skippedMinShare} added to pending, ${skippedUnreachable} accrued for wallets with no SOL`);
     console.log(`Eligible holders: ${instructions.length}`);
 
     // Never pay out more than the budget: a mis-normalised share would otherwise
